@@ -1,0 +1,2 @@
+# LF everywhere, whatever core.autocrlf says: the deploy copies this working tree to a Linux server as is.
+* text=auto eol=lf

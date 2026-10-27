@@ -1,0 +1,72 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:icalendar-ruby
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Test Student Calendar (Canvas)
+X-WR-CALDESC:Calendar events for the user\, Test Student
+BEGIN:VEVENT
+DTSTAMP:20261014T190300Z
+UID:event-assignment-9001
+DTSTART:20261029T044500Z
+DTEND:20261029T044500Z
+CLASS:PUBLIC
+DESCRIPTION:[Homework 4] (https://canvas.uw.edu/courses/1700001/files/1)
+SEQUENCE:0
+SUMMARY:Homework 4 [MATH 300 A]
+URL;VALUE=URI:https://canvas.uw.edu/calendar?include_contexts=course_1700001&month=10&year=2026#assignment_9001
+X-ALT-DESC;FMTTYPE=text/html:<p><a href="https://canvas.uw.edu/courses/1700001/files/1">Homework 4</a></p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261009T214500Z
+UID:event-assignment-9002
+DTSTART:20261026T193000Z
+DTEND:20261026T193000Z
+CLASS:PUBLIC
+DESCRIPTION:Covers sections 1-4.
+SEQUENCE:0
+SUMMARY:Midterm 1 [MATH 300 A]
+URL;VALUE=URI:https://canvas.uw.edu/calendar?include_contexts=course_1700001&month=10&year=2026#assignment_9002
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261009T214500Z
+UID:event-assignment-9003
+DTSTART:20261027T060000Z
+DTEND:20261027T060000Z
+CLASS:PUBLIC
+SEQUENCE:0
+SUMMARY:Quiz 2 [MATH 208 A]
+URL;VALUE=URI:https://canvas.uw.edu/calendar?include_contexts=course_1700002&month=10&year=2026#assignment_9003
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261009T214500Z
+UID:event-assignment-9004
+DTSTART:20261028T060000Z
+DTEND:20261028T060000Z
+CLASS:PUBLIC
+SEQUENCE:0
+SUMMARY:Quiz 1 Corrections [MATH 208 A]
+URL;VALUE=URI:https://canvas.uw.edu/calendar?include_contexts=course_1700002&month=10&year=2026#assignment_9004
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261009T214500Z
+UID:event-assignment-9005
+DTSTART;VALUE=DATE:20261030
+DTEND;VALUE=DATE:20261031
+CLASS:PUBLIC
+SEQUENCE:0
+SUMMARY:Reading response [E E 215 A Au 26: Fundamentals Of Electrical Engineering]
+URL;VALUE=URI:https://canvas.uw.edu/calendar?include_contexts=course_1700003&month=10&year=2026#assignment_9005
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261009T214500Z
+UID:event-calendar-event-555
+DTSTART:20261027T170000Z
+DTEND:20261027T180000Z
+CLASS:PUBLIC
+LOCATION:MGH 389
+SEQUENCE:0
+SUMMARY:Review session [MATH 300 A]
+URL;VALUE=URI:https://canvas.uw.edu/calendar?include_contexts=course_1700001&month=10&year=2026#calendar_event_555
+END:VEVENT
+END:VCALENDAR

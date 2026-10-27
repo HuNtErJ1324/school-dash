@@ -1,0 +1,26 @@
+# Local development: made-up demo items. No accounts or secrets needed.
+timezone: America/Los_Angeles
+
+courses:
+  # Made-up weights for the demo courses, to show grade estimates.
+  - code: DEMO 101
+    grading:
+      categories:
+        - name: Problem sets
+          weight: 60
+          match: problem set
+        - name: Reading
+          weight: 25
+        - name: Final
+          weight: 15
+          match: final exam
+  - code: DEMO 202
+    grading:
+      categories:
+        - name: Labs
+          weight: 70
+        - name: Quizzes
+          weight: 30
+
+sources:
+  - type: demo

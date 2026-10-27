@@ -1,0 +1,3052 @@
+/* The look of justin-chae.org: Rosé Pine (main, https://rosepinetheme.com), terminal-flavored, dark only,
+   clean flat surfaces. Departure Mono for display type, CommitMono for everything else. Same tokens and
+   the same jobs for each color as the site's public/home.css. */
+
+@font-face {
+  font-family: "Departure Mono";
+  src: url("./fonts/DepartureMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CommitMono Nerd Font";
+  src: url("./fonts/CommitMonoNF-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CommitMono Nerd Font";
+  src: url("./fonts/CommitMonoNF-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CommitMono Nerd Font";
+  src: url("./fonts/CommitMonoNF-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #191724; /* base: the page */
+  --bg-raised: #1f1d2e; /* surface: panels */
+  --bg-inset: #26233a; /* overlay: wells, inputs, your chat bubbles */
+
+  /* Text */
+  --text: #e0def4;
+  --subtle: #908caa;
+  --muted: #6e6a86;
+
+  /* Lines */
+  --border: #403d52;
+  --border-bright: #524f67;
+
+  /* Accents, each with one job */
+  --rose: #ebbcba; /* active, focus, headings */
+  --gold: #f6c177; /* labels, chips, times */
+  --iris: #c4a7e7; /* links */
+  --foam: #9ccfd8; /* the tutor */
+  --pine: #31748f; /* quiet structure */
+  --love: #eb6f92; /* trouble: late, missing, errors, now */
+
+  --font-display: "Departure Mono", ui-monospace, monospace;
+  --font-body: "CommitMono Nerd Font", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--border-bright) var(--bg);
+  scrollbar-width: thin;
+  scrollbar-gutter: stable; /* the long board and the short Tutor page line up: same width, scrollbar or not */
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font: 400 0.9375rem/1.55 var(--font-body);
+  color: var(--text);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--rose);
+  color: var(--bg);
+}
+
+#root {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 48px
+    max(16px, env(safe-area-inset-left));
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: 2px;
+}
+
+.quiet {
+  margin: 0;
+  color: var(--subtle);
+}
+
+.quiet-inline {
+  color: var(--subtle);
+}
+
+.problem {
+  margin: 0;
+  color: var(--love);
+}
+
+/* Course colors: the server hands out pencils (backend/app/courses.py) and courses.ts shows each as a
+   Rosé Pine chart hue, validated as a set against the panels. The hue marks edges, swatches and meters;
+   text gets a tint of it mixed toward the ink, so it reads as text. */
+[style*="--course"] {
+  --edge: var(--course-hue, var(--course));
+  --course-text: color-mix(in oklab, var(--edge) 55%, var(--text));
+}
+
+/* ---- Buttons ----------------------------------------------------------- */
+
+/* Square and flat, as on the site. The one thing to press is filled rose, like the site's current page,
+   with a hard shadow that lifts on hover; the rest are rose ink on the page, like its [ ↑ top ] button. */
+.pill-button,
+.outline-button,
+.sync-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--rose);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.pill-button {
+  background: var(--rose);
+  color: var(--bg);
+  box-shadow: 2px 2px 0 var(--border-bright);
+}
+
+.pill-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 var(--border-bright);
+}
+
+.pill-button:active:not(:disabled) {
+  transform: none;
+  box-shadow: 1px 1px 0 var(--border-bright);
+}
+
+.outline-button,
+.sync-now {
+  background: var(--bg);
+  color: var(--rose);
+}
+
+.outline-button:hover:not(:disabled),
+.sync-now:hover:not(:disabled) {
+  background: var(--rose);
+  color: var(--bg);
+}
+
+.pill-button:disabled,
+.outline-button:disabled,
+.sync-now:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* A link that does something: iris, like the site's links. */
+.text-button {
+  padding: 2px 2px;
+  border: 0;
+  background: none;
+  color: var(--iris);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.text-button:hover:not(:disabled) {
+  background: var(--iris);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+.icon-button {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-button:hover,
+.icon-button[aria-expanded="true"] {
+  color: var(--text);
+  background: var(--bg-inset);
+}
+
+/* The tick: a terminal checkbox that fills with the course's color. */
+.tick {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1.5px solid var(--edge, var(--subtle));
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+}
+
+.tick svg {
+  width: 13px;
+  height: 13px;
+}
+
+.tick:hover {
+  color: color-mix(in oklab, var(--edge, var(--subtle)) 70%, transparent);
+}
+
+.tick[aria-checked="true"] {
+  background: var(--edge, var(--subtle));
+  color: var(--bg);
+}
+
+.tick:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.tick-large {
+  width: 24px;
+  height: 24px;
+}
+
+.tick-large svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill-button,
+  .outline-button,
+  .sync-now,
+  .text-button {
+    transition: none;
+  }
+
+  .pill-button:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ---- Masthead ---------------------------------------------------------- */
+
+/* Three columns, the tabs in the middle one: they stay put whatever the sides hold (the board has
+   an Edit button the Tutor page doesn't). */
+.masthead {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 12px 24px;
+  margin-bottom: 26px;
+  padding: 6px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.masthead .tabs {
+  justify-self: center;
+  align-self: center;
+}
+
+.masthead-actions {
+  justify-self: end;
+  min-width: 0;
+}
+
+/* Medium: no room for three columns in one row, so the date and the actions share the first row and the
+   tabs get the second. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .masthead {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .masthead .tabs {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .masthead-actions {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}
+
+/* Narrow: one row each, left-aligned, so nothing shifts between pages here either. */
+@media (max-width: 760px) {
+  .masthead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .masthead-actions {
+    flex-wrap: wrap; /* a phone can't fit all three; the edit button keeps its width, so its row never changes */
+  }
+
+  .masthead .tabs,
+  .masthead-actions {
+    justify-self: start;
+  }
+}
+
+.date {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+
+/* The quarter, as a quiet line under the date that opens a list of quarters. */
+.quarter-picker {
+  position: relative;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.quarter-picker select {
+  field-sizing: content; /* as wide as the chosen quarter, where supported */
+  appearance: none;
+  padding: 2px 22px 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.quarter-picker::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--gold);
+  border-bottom: 1.5px solid var(--gold);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.quarter-picker select:hover {
+  color: var(--text);
+}
+
+.quarter-picker select option {
+  color: var(--text);
+  background: var(--bg-raised);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.quarter-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: 0 0 22px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  background: var(--bg-raised);
+  font-size: 0.875rem;
+}
+
+.quarter-notice span {
+  flex: 1 1 280px;
+}
+
+/* One line beside the date: when it's short of room the sync status gives way (ellipsis), never the buttons. */
+.masthead-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px 10px;
+  max-width: 100%;
+}
+
+.sync {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sync-summary {
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--subtle);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* As wide as "Done editing" either way, so switching doesn't move anything. */
+.edit-toggle {
+  flex: none;
+  justify-content: center;
+  min-width: calc(12ch + 0.5em + 26px);
+}
+
+.sync-summary.problem {
+  color: var(--love);
+}
+
+.sources {
+  position: absolute;
+  top: calc(100% - 10px);
+  right: 0;
+  z-index: 10;
+  width: min(440px, 100%);
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 0.5);
+}
+
+.source {
+  display: grid;
+  gap: 1px;
+  padding: 8px 16px;
+}
+
+.source + .source {
+  border-top: 1px solid var(--border);
+}
+
+.source-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  color: var(--gold);
+}
+
+.source-state {
+  font-size: 0.875rem;
+  color: var(--subtle);
+  overflow-wrap: anywhere;
+}
+
+.source.problem .source-state {
+  color: var(--love);
+}
+
+/* ---- Board ------------------------------------------------------------- */
+
+.board {
+  position: relative;
+}
+
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.board-empty {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 0 0 26px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-bright);
+}
+
+.board-hint {
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.save-state {
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+@media (max-width: 719px) {
+  .board-hint {
+    display: none; /* stacked boards don't drag */
+  }
+}
+
+/* Widgets lay themselves out by their own width, not the window's, so any widget
+   works at any size. Each is one of the site's panels: flat, a path on its top border, a grip tick
+   in its corner. */
+.widget {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  transition: border-color 0.25s ease;
+}
+
+.widget:hover {
+  border-color: var(--border-bright);
+}
+
+.widget::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--border-bright);
+  border-bottom: 2px solid var(--border-bright);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.board.editing .widget::after {
+  display: none; /* the resize handle has that corner */
+}
+
+.react-grid-item > .widget {
+  height: 100%;
+}
+
+/* The title sits on the border; the head is the row under it, for the edit tools (and the drag handle). */
+.widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 30px;
+  padding: 6px 10px 0 20px;
+}
+
+.widget-title {
+  position: absolute;
+  top: -0.8em;
+  left: 14px;
+  z-index: 1;
+  max-width: calc(100% - 28px);
+  margin: 0;
+  padding: 0 0.55em;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-tools {
+  display: flex;
+  gap: 2px;
+}
+
+.widget-grip {
+  display: inline-grid;
+  color: var(--muted);
+}
+
+.widget-drag {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.widget-drag:active {
+  cursor: grabbing;
+}
+
+.widget-body {
+  min-height: 0;
+  padding: 2px 20px 20px;
+}
+
+/* In the grid, a widget has a fixed size and scrolls inside it. Stacked, it's as tall as it needs. */
+.react-grid-item > .widget .widget-body {
+  flex: 1;
+  overflow: auto;
+}
+
+@media (max-width: 600px) {
+  .widget-head {
+    padding: 6px 8px 0 16px;
+  }
+
+  .widget-body {
+    padding: 2px 16px 16px;
+  }
+}
+
+/* Edit mode: widgets become cut-outs you can move. */
+.board.editing .widget {
+  border: 1px dashed var(--border-bright);
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: color-mix(in oklab, var(--rose) 8%, transparent);
+  border: 1px dashed var(--rose);
+  opacity: 1;
+}
+
+.react-grid-item > .react-resizable-handle {
+  background-image: none;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  right: 6px;
+  bottom: 6px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--subtle);
+  border-bottom: 2px solid var(--subtle);
+}
+
+/* Only animate while you're moving things; otherwise the board just appears. */
+.board:not(.editing) .react-grid-layout,
+.board:not(.editing) .react-grid-item {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .react-grid-layout,
+  .react-grid-item {
+    transition: none !important;
+  }
+}
+
+.widget-footer-action {
+  margin-top: 16px;
+  font-size: 0.8125rem;
+}
+
+.course-code {
+  font-weight: 700;
+  color: var(--course-text, var(--subtle));
+}
+
+.tag {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tag-missing {
+  color: var(--love);
+}
+
+.tag-submitted,
+.tag-graded,
+.tag-excused {
+  color: var(--subtle);
+}
+
+.tag-now {
+  margin-left: 8px;
+  padding: 0 6px;
+  background: var(--rose);
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 3px 0 0;
+  font-size: 0.875rem;
+  color: var(--subtle);
+  overflow-wrap: anywhere;
+}
+
+.note svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 3px;
+}
+
+/* ---- Popovers, menus, the settings dialog ------------------------------- */
+
+.popover {
+  position: fixed;
+  z-index: 50;
+  min-width: 200px;
+  max-width: min(360px, calc(100vw - 16px));
+  padding: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 0.5);
+}
+
+.menu {
+  display: grid;
+}
+
+.menu button,
+.menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  background: none;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu button:hover,
+.menu a:hover {
+  background: var(--bg-inset);
+}
+
+.widget-menu button {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.widget-menu span {
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.note-editor {
+  display: grid;
+  gap: 8px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 4px;
+}
+
+.note-editor textarea,
+.field input[type="text"],
+.field input[type="number"],
+.field select {
+  padding: 7px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* Text fields: the rose of focus on the field itself, and a rose cursor, like the site's command line. */
+:is(textarea, select, input[type="text"], input[type="number"]):focus-visible {
+  outline: none;
+  border-color: var(--rose);
+  box-shadow: 0 0 0 1px var(--rose);
+}
+
+textarea,
+input[type="text"],
+input[type="number"] {
+  caret-color: var(--rose);
+}
+
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.note-editor textarea {
+  resize: vertical;
+}
+
+.note-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.settings {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 0.5);
+}
+
+.settings::backdrop {
+  background: rgb(25 23 36 / 0.78);
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* long option text can't widen the dialog */
+  gap: 18px;
+  padding: 20px 22px;
+}
+
+.settings-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--rose);
+}
+
+.settings-title::before {
+  content: "> ";
+  color: var(--muted);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field-label {
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+}
+
+.field input[type="number"] {
+  width: 7rem;
+}
+
+.field-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--rose);
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+.field-help {
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ---- Up next: the countdown is the one loud thing on the page ----------- */
+
+.hero {
+  margin: 0 0 8px;
+  padding: 2px 0 6px 18px;
+  border-left: 6px solid var(--edge);
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hero-course {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  color: var(--subtle);
+}
+
+.hero-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.hero-title a,
+.row-title,
+.slot-title {
+  text-decoration: none;
+}
+
+.hero-title a:hover,
+a.row-title:hover,
+a.slot-title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hero-count {
+  margin: 10px 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 2rem + 5vw, 4.125rem);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+}
+
+@container (max-width: 380px) {
+  .hero-count {
+    font-size: 3rem;
+  }
+}
+
+.hero-count b {
+  font-weight: 400; /* the display face has one weight */
+}
+
+.hero-count > span + span {
+  margin-left: 0.2em;
+}
+
+.hero-count .unit {
+  margin-left: 0.05em;
+  font-size: 0.5em;
+  color: var(--subtle);
+}
+
+.hero-count .left {
+  margin-left: 0.45em;
+  font-size: 0.32em;
+  color: var(--subtle);
+}
+
+.hero-when {
+  margin: 0;
+  color: var(--subtle);
+}
+
+.group {
+  margin-top: 20px;
+}
+
+.group-label {
+  margin: 0 0 2px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+}
+
+.group.late .group-label {
+  color: var(--love);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: start;
+  gap: 2px 10px;
+  margin: 4px 0 0;
+  padding: 5px 0;
+}
+
+.row .tick {
+  margin-top: 1px;
+}
+
+.row .icon-button {
+  margin-top: -3px;
+}
+
+.row-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.row-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 1px;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.row-when {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-time {
+  display: block;
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  color: var(--gold);
+}
+
+.row-rel {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.group.late .row-rel {
+  color: var(--love);
+}
+
+/* Done work is crossed off, like in a paper planner. */
+.row.done .row-main,
+.row.done .row-when {
+  opacity: 0.6;
+}
+
+.row.done .row-title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.row.is-hidden {
+  opacity: 0.5;
+}
+
+/* ---- Today ------------------------------------------------------------- */
+
+.agenda {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  display: grid;
+  grid-template-columns: 7.75rem minmax(0, 1fr);
+  gap: 1px 12px;
+  padding: 9px 0;
+}
+
+.slot + .slot {
+  border-top: 1px solid var(--border);
+}
+
+.slot-time {
+  grid-row: span 2;
+  padding-top: 1px;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  letter-spacing: 0.03em;
+  color: var(--gold);
+}
+
+.slot-what {
+  padding-left: 10px;
+  border-left: 3px solid var(--edge);
+}
+
+.slot-title {
+  font-weight: 700;
+}
+
+.slot-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  padding-left: 13px;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.slot.past {
+  opacity: 0.5;
+}
+
+.slot.now .slot-time {
+  color: var(--rose);
+}
+
+@container (max-width: 380px) {
+  .slot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .slot-time {
+    grid-row: auto;
+    padding-left: 13px;
+  }
+}
+
+/* ---- Week -------------------------------------------------------------- */
+
+.week-grid {
+  --gutter: 2.75rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: var(--gutter) repeat(var(--days), minmax(0, 1fr));
+}
+
+.week-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.week-day {
+  padding: 0 0 6px;
+  text-align: center;
+  color: var(--subtle);
+}
+
+.week-day b {
+  display: inline-block;
+  min-width: 1.9em;
+  padding: 0 0.3em;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--text);
+}
+
+/* Today's date, boxed in love. */
+.week-day.today b {
+  box-shadow: inset 0 0 0 2px var(--love);
+  color: var(--love);
+}
+
+.week-gutter-label {
+  align-self: center;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.week-top {
+  border-bottom: 1px solid var(--border);
+}
+
+.week-top-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 4px 2px;
+  border-left: 1px solid var(--border);
+}
+
+.week-chip {
+  display: block;
+  padding: 2px 4px;
+  overflow: hidden;
+  border-left: 3px solid var(--edge);
+  background: color-mix(in oklab, var(--edge) 16%, transparent);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.week-chip a {
+  text-decoration: none;
+}
+
+.week-chip.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.week-chip-time {
+  font-weight: 700;
+}
+
+.week-body {
+  height: calc(var(--hours) * 48px);
+  margin-top: 8px;
+}
+
+.week-hours {
+  position: relative;
+}
+
+.week-hours span {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-50%);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.week-col {
+  position: relative;
+  border-left: 1px solid var(--border);
+  background-image: linear-gradient(color-mix(in oklab, var(--border) 70%, transparent) 1px, transparent 1px);
+  background-size: 100% calc(100% / var(--hours));
+}
+
+.week-col.today {
+  background-color: color-mix(in oklab, var(--love) 5%, transparent);
+}
+
+.week-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: 2px 4px;
+  overflow: hidden;
+  border-left: 3px solid var(--edge);
+  background: color-mix(in oklab, var(--edge) 20%, var(--bg-raised));
+  color: var(--text);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+a.week-block:hover {
+  background: color-mix(in oklab, var(--edge) 32%, var(--bg-raised));
+}
+
+.week-block-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 700;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.week-block.short .week-block-title {
+  -webkit-line-clamp: 1;
+}
+
+.week-block-meta {
+  overflow: hidden;
+  color: var(--subtle);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.week-block.past {
+  opacity: 0.5;
+}
+
+.now-line {
+  position: absolute;
+  left: -1px;
+  right: 0;
+  z-index: 1;
+  height: 2px;
+  background: var(--love);
+}
+
+.now-line::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--love);
+}
+
+/* ---- Course cards: binder tab dividers ---------------------------------- */
+
+.course-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.course-card {
+  min-width: 0;
+  padding: 10px 12px 12px;
+  border-top: 3px solid var(--edge);
+  background: var(--bg-inset);
+}
+
+.course-card-code {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--course-text);
+}
+
+.course-card-name {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.course-card-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 8px 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.course-card-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.course-card-facts dt {
+  color: var(--subtle);
+}
+
+.course-card-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.course-card-facts a {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.course-card-facts a:hover {
+  text-decoration: underline;
+}
+
+.course-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.course-card-links a {
+  color: var(--iris);
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+.course-card-links a:hover {
+  background: var(--iris);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+/* ---- Grades ------------------------------------------------------------ */
+
+.grade-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grade-card {
+  min-width: 0;
+}
+
+/* Text stays in ink; the course's identity comes from the swatch beside it. */
+.grade-course {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.swatch {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  background: var(--edge);
+}
+
+.grade-estimate {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 2.0625rem;
+  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.grade-basis {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.grade-categories {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grade-category {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  font-size: 0.875rem;
+}
+
+.grade-category-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The track is a dim step of the same hue as the fill. */
+.meter {
+  grid-column: 1 / -1;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--edge) 22%, var(--bg-inset));
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--edge);
+}
+
+.grade-details {
+  margin-top: 14px;
+  font-size: 0.875rem;
+}
+
+.grade-details summary {
+  cursor: pointer;
+  color: var(--subtle);
+}
+
+.grade-details table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+
+.grade-details th {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  text-align: left;
+  color: var(--subtle);
+}
+
+.grade-details td {
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  vertical-align: top;
+}
+
+.grade-details .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-details tr.dropped td {
+  color: var(--muted);
+}
+
+.grade-item-category {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.grade-details a {
+  text-decoration: none;
+}
+
+.grade-details a:hover {
+  text-decoration: underline;
+}
+
+/* ---- The agent: today's plan, briefs, questions -------------------------- */
+
+/* Work in progress: a pencil still moving. */
+.working {
+  margin: 0 0 12px;
+  color: var(--subtle);
+}
+
+.working::after {
+  content: "…";
+  display: inline-block;
+  width: 1.2em;
+  animation: working 1.4s steps(4, end) infinite;
+  overflow: hidden;
+  vertical-align: bottom;
+  clip-path: inset(0 100% 0 0);
+}
+
+@keyframes working {
+  to {
+    clip-path: inset(0 -0.4em 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .working::after {
+    animation: none;
+    clip-path: none;
+  }
+}
+
+.plan > .problem,
+.sheet-body .problem {
+  margin-bottom: 10px;
+}
+
+.plan-summary {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-wrap: pretty;
+}
+
+.plan-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.plan-tasks {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 2px 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.task:first-child {
+  border-top: 0;
+}
+
+.task .tick {
+  margin-top: 2px;
+}
+
+.task-main > * + * {
+  margin-top: 3px;
+}
+
+.task-title {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.task-why {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.task-steps {
+  margin: 4px 0 0;
+  padding-left: 1.3em;
+  font-size: 0.875rem;
+}
+
+.task-minutes {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  letter-spacing: 0.03em;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.task-brief {
+  padding: 0;
+  font-size: inherit;
+}
+
+.task.done .task-main,
+.task.done .task-minutes {
+  opacity: 0.6;
+}
+
+.task.done .task-title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.plan-actions {
+  margin-top: 16px;
+}
+
+.plan-actions .problem {
+  margin-top: 8px;
+}
+
+.heads-up {
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+}
+
+.heads-up li + li {
+  margin-top: 3px;
+}
+
+.resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.resources li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.resources svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+}
+
+.resources a {
+  color: var(--iris);
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.resources a:hover {
+  background: var(--iris);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+/* The agent's markdown: compact, readable at widget widths. */
+.md {
+  overflow-wrap: anywhere;
+}
+
+.md > :first-child {
+  margin-top: 0;
+}
+
+.md > :last-child {
+  margin-bottom: 0;
+}
+
+.md p,
+.md ul,
+.md ol,
+.md pre,
+.md table,
+.md blockquote {
+  margin: 0 0 10px;
+}
+
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+  margin: 16px 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--rose);
+}
+
+.md h1::before,
+.md h2::before,
+.md h3::before,
+.md h4::before {
+  content: "> ";
+  color: var(--muted);
+}
+
+.md ul,
+.md ol {
+  padding-left: 1.3em;
+}
+
+.md li + li {
+  margin-top: 3px;
+}
+
+.md a {
+  color: var(--iris);
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+.md a:hover {
+  background: var(--iris);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+.md code {
+  padding: 0.05em 0.4em;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-size: 0.9em;
+}
+
+.md pre {
+  padding: 10px 12px;
+  overflow-x: auto;
+  white-space: pre-wrap; /* long lines wrap: nothing to scroll sideways in a narrow chat */
+  overflow-wrap: anywhere;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--pine);
+  line-height: 1.5;
+}
+
+.md pre code {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text);
+}
+
+.md blockquote {
+  padding-left: 12px;
+  border-left: 3px solid var(--border-bright);
+  color: var(--subtle);
+}
+
+.md em {
+  color: var(--gold);
+}
+
+.md table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.md th,
+.md td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.chat {
+  display: grid;
+  gap: 12px;
+}
+
+.chat-messages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* a wide message can't widen the list past its panel */
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.msg p {
+  margin: 0;
+}
+
+/* Like the site's chat: your messages on the overlay, the tutor's in an outlined bubble. */
+.msg-user {
+  justify-self: end;
+  max-width: 85%;
+  padding: 8px 12px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 12px 2px 12px 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg-assistant {
+  min-width: 0;
+  padding: 10px 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px 12px 12px 12px;
+}
+
+.composer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.composer-photo {
+  width: 38px;
+  height: 38px;
+}
+
+.composer-photo svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* The camera, and any other tools (a Tutor session's canvas), stacked beside the text box. */
+.composer-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Two of them stacked are as tall as a two-line text box. */
+.composer-tools.stacked .composer-photo {
+  width: 34px;
+  height: 31px;
+}
+
+/* Photos waiting to be sent: thumbnails above the box, each with a remove button. */
+.attaching {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attaching li {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.attaching img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attaching-busy img,
+.attaching-failed img {
+  opacity: 0.45;
+}
+
+.attaching-state {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 2px 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-align: center;
+  background: color-mix(in oklab, var(--bg-raised) 80%, transparent);
+}
+
+.attaching-failed .attaching-state {
+  color: var(--love);
+}
+
+.attaching-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.6);
+  color: white;
+  cursor: pointer;
+}
+
+.attaching-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.msg-photos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* A fixed height reserves the space before the image loads, so the page doesn't jump under you. */
+.msg-photos img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 160px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.composer textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.ask-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ask-bar select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* A brief: a sheet over the board, wide enough to read. */
+.sheet {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 0.5);
+}
+
+.sheet::backdrop {
+  background: rgb(25 23 36 / 0.78);
+}
+
+.sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 22px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-head-flush {
+  position: static;
+  padding: 0;
+  border: 0;
+}
+
+.sheet-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--rose);
+}
+
+.sheet-title::before {
+  content: "> ";
+  color: var(--muted);
+}
+
+.sheet-body {
+  padding: 16px 22px 22px;
+}
+
+.sheet-meta {
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.sheet-section {
+  margin-top: 24px;
+}
+
+.sheet-section .group-label {
+  margin-bottom: 12px;
+}
+
+.sheet-actions {
+  margin-top: 14px;
+}
+
+@media (max-width: 600px) {
+  .sheet-head {
+    padding: 14px 16px 10px;
+  }
+
+  .sheet-body {
+    padding: 14px 16px 18px;
+  }
+}
+
+/* ---- Library ---------------------------------------------------------- */
+
+.library-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.library-bar .text-button:disabled {
+  cursor: progress;
+  text-decoration: none;
+}
+
+.library-runs {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.library-runs .problem {
+  color: var(--love);
+}
+
+.library-course {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.library-course summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 8px 0 2px;
+  cursor: pointer;
+}
+
+.library-counts {
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.library-docs {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-docs li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 6px;
+  padding: 4px 0;
+}
+
+.library-docs a {
+  overflow-wrap: anywhere;
+  color: var(--iris);
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+.library-docs a:hover {
+  background: var(--iris);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+.library-doc-meta {
+  grid-column: 1;
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.library-docs .icon-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.segmented {
+  display: inline-flex;
+  justify-self: start;
+  gap: 2px;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+
+.segmented label {
+  padding: 1px 10px;
+  border: 1px solid var(--border);
+  color: var(--subtle);
+  cursor: pointer;
+}
+
+.segmented label:has(input:checked) {
+  background: var(--rose);
+  border-color: var(--rose);
+  color: var(--bg);
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid var(--rose);
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.field textarea {
+  padding: 7px 10px;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.field select,
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---- Pages and the Tutor page -------------------------------------------- */
+
+/* The pages, as the site's nav: brackets on hover, the current one in rose. */
+.tabs {
+  display: inline-flex;
+  align-self: center;
+  gap: 2px;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  letter-spacing: 0.04em;
+}
+
+.tabs a {
+  padding: 0.1em 0.55em;
+  color: var(--subtle);
+  text-decoration: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.tabs a::before,
+.tabs a::after {
+  opacity: 0;
+  color: var(--gold);
+  transition: opacity 0.15s ease;
+}
+
+.tabs a::before {
+  content: "[";
+  margin-right: 1px;
+}
+
+.tabs a::after {
+  content: "]";
+  margin-left: 1px;
+}
+
+.tabs a:hover {
+  color: var(--text);
+}
+
+.tabs a:hover::before,
+.tabs a:hover::after,
+.tabs a[aria-current="page"]::before,
+.tabs a[aria-current="page"]::after {
+  opacity: 1;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--rose);
+  color: var(--bg);
+}
+
+.tabs a[aria-current="page"]::before,
+.tabs a[aria-current="page"]::after {
+  color: var(--bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs a,
+  .tabs a::before,
+  .tabs a::after {
+    transition: none;
+  }
+}
+
+.tutor {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.tutor-sessions,
+.tutor-main {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.tutor-sessions {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 14px;
+}
+
+.new-session {
+  justify-content: center;
+  width: 100%;
+  text-decoration: none;
+}
+
+.tutor-sessions > .quiet {
+  margin-top: 12px;
+}
+
+.session-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The site's list rail: a line down the left, in the course's color, that lights up rose. */
+.session-list a {
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border-left: 2px solid var(--edge, var(--border));
+  text-decoration: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.session-list li + li {
+  margin-top: 4px;
+}
+
+.session-list a:hover {
+  border-left-color: var(--rose);
+}
+
+.session-list a[aria-current="page"] {
+  background: var(--bg-inset);
+  border-left-color: var(--rose);
+}
+
+.session-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 400;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.session-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.tutor-main {
+  min-height: 60dvh;
+  padding: 20px 24px 0;
+}
+
+.tutor-heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+  color: var(--rose);
+  overflow-wrap: anywhere;
+}
+
+.tutor-heading::before {
+  content: "> ";
+  color: var(--muted);
+}
+
+.new-session-panel {
+  padding-bottom: 24px;
+}
+
+.new-session-panel .tutor-heading {
+  margin-bottom: 18px;
+}
+
+.tutor-field {
+  min-width: 0;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.tutor-field legend {
+  margin-bottom: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* The site's chips: square, on the page, a course's in its color. */
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  background: var(--bg);
+  border: 1px solid var(--edge, var(--border));
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.chip:has(input:checked) {
+  background: color-mix(in oklab, var(--edge, var(--rose)) 22%, var(--bg-inset));
+  border-color: var(--edge, var(--rose));
+}
+
+.chip-when {
+  font-weight: 400;
+  color: var(--subtle);
+}
+
+.chip .course-code,
+.chip-when {
+  flex: none;
+  white-space: nowrap;
+}
+
+.chip input,
+.mode-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip:has(input:focus-visible),
+.mode-card:has(input:focus-visible) {
+  outline: 2px solid var(--rose);
+  outline-offset: 2px;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.mode-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.mode-card:hover {
+  border-color: var(--border-bright);
+}
+
+.mode-card:has(input:checked) {
+  border-color: var(--rose);
+  background: var(--bg-inset);
+}
+
+.mode-label {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  letter-spacing: 0.04em;
+}
+
+.mode-card:has(input:checked) .mode-label {
+  color: var(--rose);
+}
+
+.mode-blurb {
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+.tutor-note {
+  margin: 14px 0 0;
+}
+
+.session-head {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.session-back {
+  display: none;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--subtle);
+}
+
+.session .chat-messages {
+  gap: 18px;
+}
+
+/* The reply box stays in view at the bottom of the screen while a long session scrolls. */
+.session-composer {
+  position: sticky;
+  bottom: 0;
+  margin-top: 18px;
+  padding: 12px 0 16px;
+  background: var(--bg-raised);
+  border-top: 1px solid var(--border);
+}
+
+.quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.quick-replies .chip {
+  color: var(--subtle);
+  font: inherit;
+  font-size: 0.8125rem;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.quick-replies .chip:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--rose);
+}
+
+.chat-open {
+  justify-self: start;
+  font-size: 0.8125rem;
+  color: var(--iris);
+}
+
+.md .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+/* KaTeX keeps a displayed equation on one line; let it wrap at its = and + signs instead of scrolling
+   sideways. Markdown.tsx shrinks one with nowhere to break. */
+.md .katex-display > .katex {
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .tutor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tutor-sessions {
+    position: static;
+    max-height: none;
+    order: 2;
+  }
+
+  .tutor.in-session .tutor-sessions {
+    display: none;
+  }
+
+  .tutor-main {
+    padding: 16px 16px 0;
+  }
+
+  .session-back {
+    display: inline-block;
+  }
+}
+
+/* ---- Canvas ------------------------------------------------------------ */
+
+/* An open canvas fills the window below the masthead (useFillHeight sets its height), so the page doesn't scroll. */
+#root:has(.canvas-page.open) {
+  padding-bottom: 16px;
+}
+
+.canvas-page {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.canvas-page.open {
+  align-items: stretch;
+}
+
+.canvas-page .canvas-list {
+  position: static;
+  max-height: 100%;
+}
+
+.canvas-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.canvas-new {
+  padding: 20px 24px 24px;
+}
+
+.canvas-new .field-help {
+  margin: 0 0 12px;
+}
+
+.canvas-blank {
+  margin-top: 12px;
+  padding: 0;
+}
+
+.canvas-message {
+  padding: 20px 24px;
+}
+
+.canvas-board {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 3px solid var(--edge, transparent);
+}
+
+.canvas-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.canvas-head .session-meta {
+  margin: 0;
+}
+
+.canvas-back {
+  display: none;
+  padding: 0;
+}
+
+.canvas-title {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 3px 6px;
+  font: 400 1.125rem/1.3 var(--font-display);
+  letter-spacing: 0.03em;
+  color: var(--rose);
+  background: none;
+  border: 1px solid transparent;
+}
+
+.canvas-title:hover {
+  border-color: var(--border);
+}
+
+.canvas-title:focus-visible,
+.canvas-title:focus {
+  outline: none;
+  border-color: var(--rose);
+  box-shadow: none;
+  background: var(--bg);
+}
+
+.canvas-body {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+/* The chat's width is yours to drag (ChatResizer); the canvas always keeps at least 240 px. */
+.canvas-body.chat-open {
+  grid-template-columns: minmax(0, 1fr) min(var(--chat-width, 340px), calc(100% - 240px));
+}
+
+.canvas-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.canvas-actions button {
+  white-space: nowrap;
+}
+
+/* On a phone Excalidraw puts this slot in its crowded toolbar row; drop the buttons just below it instead,
+   clear of its own column of buttons at the right edge, and the pinned problem below them. */
+.excalidraw--mobile .canvas-actions {
+  position: absolute;
+  top: 56px;
+  right: 46px;
+}
+
+.canvas-stage:has(.excalidraw--mobile) .problem-pin {
+  top: 120px;
+}
+
+/* Unread notes from the tutor, in its ink (annotate.ts). */
+.canvas-unread {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4em;
+  height: 1.4em;
+  margin-left: 6px;
+  padding: 0 4px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--bg);
+  background: var(--foam);
+}
+
+.canvas-chat {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-raised);
+  border-left: 1px solid var(--border);
+}
+
+/* The chat's edge, to drag: a strip astride its left border, which lights up when you find it. */
+.canvas-chat-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  z-index: 6;
+  width: 12px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.canvas-chat-resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  transition: background-color 0.15s;
+}
+
+.canvas-chat-resizer:hover::after,
+.canvas-chat-resizer:focus-visible::after {
+  background: var(--rose);
+}
+
+.canvas-chat-resizer:focus-visible {
+  outline: none;
+}
+
+.canvas-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 6px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.canvas-chat-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--foam);
+}
+
+.canvas-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+.canvas-chat-messages .quiet {
+  margin: 0;
+}
+
+.canvas-chat-composer {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* The problem the tutor found, pinned over the canvas at the top right (Excalidraw keeps its tool
+   settings on the left). In the tutor's ink, like its notes. */
+.problem-pin {
+  position: absolute;
+  top: 64px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, 55%);
+  max-height: 45%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--foam);
+  box-shadow: 0 6px 22px rgb(0 0 0 / 0.35);
+}
+
+.problem-pin.collapsed {
+  width: auto;
+}
+
+.problem-pin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font: 400 0.9375rem/1.2 var(--font-display);
+  letter-spacing: 0.05em;
+  color: var(--foam);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.problem-pin-toggle::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translate(-2px, -2px);
+}
+
+.problem-pin-toggle[aria-expanded="false"]::after {
+  transform: rotate(-45deg);
+}
+
+.problem-pin-body {
+  overflow: auto;
+  padding: 0 14px 12px;
+  font-size: 0.9375rem;
+}
+
+.problem-pin-body .md > :first-child {
+  margin-top: 0;
+}
+
+.problem-pin-body .md > :last-child {
+  margin-bottom: 0;
+}
+
+/* A Tutor session's canvas covers the whole window, its chat beside it (canvas/SessionCanvas.tsx). */
+.session-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--bg);
+}
+
+/* Nothing scrolls behind it, so the page's scrollbar gutter can go too. */
+html:has(.session-canvas) {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.session-canvas .canvas-board {
+  border-top: 0;
+}
+
+.canvas-close {
+  justify-content: center;
+  width: 36px;
+  padding: 0;
+}
+
+.canvas-chat-head h3 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-save-problem {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 760px) {
+  .canvas-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canvas-page .canvas-list {
+    order: 2;
+  }
+
+  .canvas-page.open .canvas-list {
+    display: none;
+  }
+
+  .canvas-back {
+    display: inline-block;
+  }
+
+  .canvas-new {
+    padding: 16px;
+  }
+
+  /* The chat slides over the bottom of the canvas instead of squeezing it. */
+  .canvas-body.chat-open {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canvas-chat {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    height: var(--chat-height, 60%);
+    border-top: 1px solid var(--border);
+    border-left: 0;
+    box-shadow: 0 -6px 20px rgb(0 0 0 / 0.15);
+  }
+
+  /* As a sheet, its top edge is the handle: a grab bar to drag up or down. */
+  .canvas-chat-resizer {
+    top: -8px;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 22px;
+    cursor: row-resize;
+  }
+
+  .canvas-chat-resizer::after {
+    top: 12px;
+    bottom: auto;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    margin-left: -20px;
+    background: var(--border-bright);
+  }
+}
+
+/* ---- Excalidraw, in the site's colors ------------------------------------- */
+
+/* Its panels on Rosé Pine surfaces, its accent in iris, its type in the site's face. The drawing itself is
+   inverted in dark mode; CanvasBoard and annotate.ts pick page, ink and note colors that come out as the
+   site's --bg, --text, --bg-inset and --foam. (Scoped to .canvas-stage: Excalidraw's own stylesheet loads
+   after this one and would win a tie.) */
+.canvas-stage .excalidraw.theme--dark {
+  --ui-font: var(--font-body);
+  --default-bg-color: #191724;
+  --island-bg-color: #1f1d2e;
+  --popup-bg-color: #1f1d2e;
+  --popup-secondary-bg-color: #26233a;
+  --sidebar-bg-color: #1f1d2e;
+  --input-bg-color: #191724;
+  --input-border-color: #403d52;
+  --input-hover-bg-color: #26233a;
+  --input-label-color: #e0def4;
+  --popup-text-color: #e0def4;
+  --text-primary-color: #e0def4;
+  --color-on-surface: #e0def4;
+  --color-surface-high: #26233a;
+  --color-surface-mid: #1f1d2e;
+  --color-surface-low: #26233a;
+  --color-surface-lowest: #191724;
+  --color-primary: #c4a7e7;
+  --color-primary-darker: #b598dc;
+  --color-primary-darkest: #a689d1;
+  --color-primary-hover: #d3bcef;
+  --color-primary-light: #3e3656;
+  --color-primary-light-darker: #362f4c;
+  --color-surface-primary-container: #3e3656;
+  --color-on-primary-container: #e0def4;
+  --color-brand-hover: #d3bcef;
+  --select-highlight-color: #c4a7e7;
+  --focus-highlight-color: #ebbcba;
+  --link-color: #c4a7e7;
+  --color-danger: #eb6f92;
+  --dialog-border-color: #524f67;
+  --scrollbar-thumb: #524f67;
+  --scrollbar-thumb-hover: #6e6a86;
+}
+
+/* Its shape library: no use for working problems, and it crowds the Help and Chat buttons. */
+.canvas-stage .default-sidebar-trigger {
+  display: none;
+}

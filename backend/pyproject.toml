@@ -1,0 +1,35 @@
+[project]
+name = "school-dashboard"
+version = "0.1.0"
+description = "Self-hosted dashboard for everything due across Canvas, Gradescope and course sites"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+  "sqlalchemy>=2.0",
+  "pydantic>=2.7",
+  "pyyaml>=6.0",
+  "icalendar>=6.0",
+  "recurring-ical-events>=3.3",
+  "beautifulsoup4>=4.12",
+  "python-dateutil>=2.9",
+  "tzdata",
+  "markdownify>=0.13",
+  "pymupdf>=1.24",
+  "python-multipart>=0.0.9",
+  "pillow>=12.3,<13",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

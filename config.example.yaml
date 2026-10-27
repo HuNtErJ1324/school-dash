@@ -1,0 +1,107 @@
+# Copy to config.yaml and edit. Secrets live in .env and are referenced as ${NAME}.
+# Restart the app after editing (docker compose restart app).
+
+timezone: America/Los_Angeles
+# The quarter comes from Canvas, Gradescope and course-site addresses; pick another in the header.
+# Give a course `quarter: 27wi` here only when no source places it.
+
+# Courses to name, color or link. Sources also create any course they come across
+# (every Canvas course, for example), so list only the ones you want to customise.
+courses:
+  - code: CSE 410
+    color: "#2f6fd0"
+    links:
+      site: https://courses.cs.washington.edu/courses/cse410/26au/
+      gradescope: https://www.gradescope.com/courses/1400003
+      ed: https://edstem.org/us/courses/100001/discussion
+    # The syllabus's weights, for the Grades widget. Each graded item goes to the first
+    # category whose `match` (a regex, case-insensitive) fits its title, or whose name
+    # equals the source's own grouping (a Canvas assignment group). Without `match`, the
+    # name is used: "Labs" matches "Lab 3". `drop_lowest: N` drops the N lowest scores.
+    grading:
+      categories:
+        - name: Design Docs
+          weight: 5
+          match: \bdd\b|design doc
+        - name: Labs
+          weight: 40
+          match: \blab
+        - name: Problem Sets
+          weight: 15
+          match: pset|problem set
+        - name: Midterm
+          weight: 15
+        - name: Final
+          weight: 25
+          match: \bfinal\b
+
+# The agent: prime-agent in its own container, with your course library and dashboard data.
+# It makes the day's plan, writes assignment briefs and answers questions. Needs
+# ANTHROPIC_API_KEY and PRIME_AGENT_DIR in .env.
+agent:
+  model: claude-opus-5-5
+  thinking: medium # prime-agent's --thinking level
+
+# The day's plan, made every morning (and whenever you press Plan again).
+planner:
+  time: "06:30" # local time
+  # Hours of focused work you usually have, by weekday (mon, tue, ... sun); `default` for the rest.
+  hours: {default: 4, sat: 5, sun: 5}
+  notes: "" # anything the plan should always respect: "I work Tue/Thu 5-9pm", "no work Friday nights"
+  brief_days: 10 # each morning, write briefs for assignments and exams due within this many days
+  max_briefs: 4 # ...at most this many a morning
+
+# Course documents the agent reads. Every course's `links.site` above is read (its pages, the
+# PDFs they link, shared Google slides); list more sites here. With the canvas source set up,
+# Canvas syllabi, assignment descriptions, pages and files are read too. Add textbooks and
+# notes from the Library widget.
+library:
+  # sites:
+  #   - course: CSE 333
+  #     url: https://courses.cs.washington.edu/courses/cse333/26au/
+  #     skip: ["/videos/"] # regexes on URLs to leave out
+  canvas: true
+  interval_hours: 12
+
+sources:
+  # Canvas -> Calendar -> "Calendar Feed" (bottom right of the calendar page).
+  # Every course's due dates and calendar events. No API token needed.
+  - type: canvas_feed
+    url: ${CANVAS_FEED_URL}
+
+  # CSE 410's own calendar: lectures, sections, office hours and deadlines, from
+  # calendar/subscribe.html on the course site. Change section-AA to your section.
+  - type: cse_calendar
+    name: cse410
+    course: CSE 410
+    base_url: https://courses.cs.washington.edu/courses/cse410/26au/calendar/
+    calendars: [lecture-A, oh, section-AA]
+
+  # Gradescope: scores, submission status and exact due times, merged with the same
+  # assignments from Canvas and course calendars. UW's Gradescope login is NetID-only,
+  # so this reads your browser session: the Cookie header from a logged-in
+  # gradescope.com tab, kept in .env. Paste a fresh one when it stops syncing.
+  # `course_map` fixes courses whose Gradescope short name isn't a course code.
+  - type: gradescope
+    cookie: ${GRADESCOPE_COOKIE}
+    # course_map: {1400002: CSE 311}
+
+  # Optional: the Canvas API, which adds scores, submitted/missing status and assignment
+  # groups (the canvas_feed has none of those). UW doesn't issue API tokens, so this
+  # uses your browser's Cookie header for canvas.uw.edu and stops working when that
+  # session expires. Its assignments merge with canvas_feed's automatically.
+  # Only courses in the term most of your active courses share are read, which leaves out
+  # trainings and orientation "courses"; list term names in `terms` to choose yourself.
+  # - type: canvas
+  #   cookie: ${CANVAS_COOKIE}
+  #   terms: [Autumn 2026]
+
+  # Any other .ics feed, such as a course's Google Calendar:
+  # - type: ics
+  #   name: cse312-oh
+  #   course: CSE 312
+  #   kind: office_hours
+  #   url: https://calendar.google.com/calendar/ical/.../public/basic.ics
+
+  # Made-up items for trying the UI:
+  # - type: demo

@@ -1,0 +1,67 @@
+# The dashboard is only reachable over your tailnet. `tailscale serve` (tailscale/serve.json)
+# proxies https://school.<your-tailnet>.ts.net to the app over this stack's private Docker
+# network. No ports are published on the host.
+#
+# The app has its own network rather than sharing the tailscale container's: a container
+# restart re-creates its network namespace, and an app sharing it would be left offline.
+#
+# Everything the app keeps is in ./data (database, course library, photos), owned by you: both the app
+# and the agent run as PUID:PGID. Create the folders before the first start (see the README), or
+# Docker creates the agent's as root and the app can't write to them.
+services:
+  tailscale:
+    image: tailscale/tailscale:latest # pin a version (tailscale/tailscale:v1.x.y) once it works
+    hostname: school # becomes https://school.<your-tailnet>.ts.net
+    environment:
+      # Needed for the first start; the identity is then kept in tailscale-state. An interactive
+      # login link doesn't work here: the container gives up on it after about a minute.
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_AUTH_ONCE: "true" # use the key only when not already logged in
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_USERSPACE: "true" # serve works without /dev/net/tun or extra capabilities
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - ./tailscale:/config:ro
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      HOST: 0.0.0.0 # on this stack's network only: nothing is published on the host
+      TZ: America/Los_Angeles
+      AGENT_URL: http://agent:8790
+    expose: ["8000"]
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+      - ./data:/data
+    restart: unless-stopped
+
+  # The agent: prime-agent with its own persistent home (sessions, memory, Python kernel),
+  # separate from any prime-agent setup on the host. It sees a read-only snapshot of the
+  # dashboard's database and the course library, and has the Claude API key. No cookies, no
+  # .env. Only the app talks to it, over this stack's network.
+  agent:
+    build: .
+    user: "${PUID:-1000}:${PGID:-1000}"
+    command: ["python", "-m", "app.agent.runner"]
+    environment:
+      TZ: America/Los_Angeles
+      HOME: /prime-home
+      AGENT_WORKSPACE: /workspace
+      PRIME_AGENT_BIN: /opt/prime-agent/bin/prime-agent
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    expose: ["8790"]
+    volumes:
+      - ./data/agent-home:/prime-home
+      - ./data/agent-workspace:/workspace
+      - ./data/snapshot:/workspace/data:ro
+      - ./data/library:/workspace/library:ro
+      - ./data/uploads:/workspace/uploads:ro # photos attached in tutoring sessions
+      - ${PRIME_AGENT_DIR:-./prime-agent}:/opt/prime-agent:ro # prime-agent's install folder (set in .env)
+    restart: unless-stopped
+
+volumes:
+  tailscale-state:
