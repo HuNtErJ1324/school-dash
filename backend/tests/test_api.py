@@ -109,6 +109,29 @@ def test_page_addresses_load_the_app(tmp_path):
             r = c.get(page)
             assert (r.status_code, r.text) == (200, "<div id=root></div>"), page
         assert c.get("/assets/app.js").text == "console.log(1)"
+        assert "access-control-allow-origin" not in c.get("/assets/app.js").headers
         assert c.get("/assets/missing.js").status_code == 404
         assert c.get("/api/nothing-here").status_code == 404
         assert c.get("/api/agent").status_code == 200
+
+
+def test_diagram_libraries_load_in_the_sealed_frame(tmp_path):
+    """The agent's diagrams run in a frame with no origin, so /viz/ (and only /viz/) answers cross-origin."""
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+
+    web = tmp_path / "web"
+    (web / "viz" / "three").mkdir(parents=True)
+    (web / "index.html").write_text("<div id=root></div>", encoding="utf-8")
+    (web / "viz" / "three" / "three.module.js").write_text("export const REVISION = '186';", encoding="utf-8")
+    (tmp_path / "config.yaml").write_text("sources: []\n", encoding="utf-8")
+    settings = Settings(config_path=tmp_path / "config.yaml", data_dir=tmp_path / "data", static_dir=web, sync_on_start=False)
+    with TestClient(create_app(settings)) as c:
+        r = c.get("/viz/three/three.module.js", headers={"Origin": "null"})
+        assert r.status_code == 200
+        assert r.headers["access-control-allow-origin"] == "*"
+        assert "javascript" in r.headers["content-type"]  # module scripts are refused without a JS type
+        assert c.get("/viz/missing.js").status_code == 404
+        assert "access-control-allow-origin" not in c.get("/").headers

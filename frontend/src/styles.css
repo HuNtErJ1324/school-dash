@@ -1866,6 +1866,81 @@ a.week-block:hover {
   text-align: left;
 }
 
+/* The agent's interactive diagrams (agent/Viz.tsx): as wide as the message, as tall as their page. */
+.viz {
+  margin: 0 0 10px;
+}
+
+.viz > iframe {
+  display: block;
+  box-sizing: content-box; /* its height is the page's, set from inside it; the border goes around that */
+  width: calc(100% - 2px);
+  max-height: 85vh;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.viz figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+}
+
+.viz figcaption .text-button {
+  flex: none;
+}
+
+.viz details {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+}
+
+.viz summary {
+  color: var(--subtle);
+  cursor: pointer;
+}
+
+.viz details pre {
+  max-height: 320px;
+  margin: 6px 0 0;
+  overflow-y: auto;
+}
+
+/* Full screen: a modal dialog, so it's in the top layer, over everything (a brief's dialog, the canvas page). */
+.viz-full {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.viz-full[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.viz-full .icon-button {
+  justify-self: end;
+  margin: 6px;
+}
+
+.viz-full iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
 .chat {
   display: grid;
   gap: 12px;

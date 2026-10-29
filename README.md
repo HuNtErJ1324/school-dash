@@ -109,6 +109,13 @@ asks it for three things:
   question or an example by hand. The session keeps its
   mode; Help and messages sent from there carry a snapshot, and the tutor can pin a problem over the
   canvas for you to work. Deleting the session deletes its canvas.
+- **Diagrams you can play with**, in any answer or brief: when watching something move would teach it better
+  than words (a recursion tree unfolding, a page-table walk, rectangles narrowing under a Riemann sum), the agent
+  draws an interactive diagram with buttons and sliders, in plain SVG or with D3, p5.js, three.js or KaTeX, which
+  the dashboard serves itself (`/viz/`). Each runs sealed in a frame of its own: it can't read the dashboard or
+  reach the network, and loads nothing but those libraries. If one breaks, it shows the error and its code.
+  **Full screen** opens it larger. To offer the agent another library, add it to `VIZ` in
+  `frontend/vite.config.ts` and to "Diagrams you can play with" in its instructions (`runner.py`).
 
 How it tutors follows TutorMoments ([Zhang et al., 2026](https://tutormoments.allen.ai/static/paper/tutormoments-preview.pdf)),
 which found that LLM tutors left to their defaults over-scaffold (do the student's thinking) and rarely
@@ -300,8 +307,9 @@ form is generated from. It then shows up under Add widget. Overlay actions (`Don
   feeds, Beautiful Soup and markdownify for course sites, [PyMuPDF](https://pymupdf.readthedocs.io) for PDFs
   and page images, Pillow for photos.
 - **Frontend:** React and TypeScript on Vite, TanStack Query, react-grid-layout for the board,
-  react-markdown with [KaTeX](https://katex.org) for math, and [Excalidraw](https://github.com/excalidraw/excalidraw)
-  for the shared canvas.
+  react-markdown with [KaTeX](https://katex.org) for math, [Excalidraw](https://github.com/excalidraw/excalidraw)
+  for the shared canvas, and [D3](https://d3js.org), [p5.js](https://p5js.org) and
+  [three.js](https://threejs.org) for the agent's interactive diagrams.
 - **The agent:** prime-agent, an agent harness, running Claude (Opus) with a Python kernel and the
   course library, and optionally [Serper](https://serper.dev) for web search.
 - **Hosting:** Docker Compose and [Tailscale](https://tailscale.com) (`tailscale serve`, no open ports).

@@ -1,13 +1,14 @@
 import "katex/dist/katex.min.css";
 
 import { useEffect, useRef, type RefObject } from "react";
-import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type Components, type ExtraProps } from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 import { docHref, type Resource } from "../api";
 import { BookIcon, OpenIcon } from "../ui/icons";
+import { Viz } from "./Viz";
 
 /** The agent cites library documents as doc:41 or doc:41#page=12; those open the document at that page. */
 function transform(url: string): string {
@@ -15,7 +16,29 @@ function transform(url: string): string {
   return doc ? docHref(Number(doc[1]), doc[2]) : defaultUrlTransform(url);
 }
 
-/** The agent's markdown, with $math$ and $$display math$$. Raw HTML in it is shown as text, never run. */
+/** The page in a ```viz code block, or null for any other block. */
+function vizSource(pre: ExtraProps["node"]): string | null {
+  const code = pre?.children[0];
+  if (code?.type !== "element" || code.tagName !== "code") return null;
+  const classes = code.properties.className;
+  if (!Array.isArray(classes) || !classes.includes("language-viz")) return null;
+  return code.children.map((c) => (c.type === "text" ? c.value : "")).join("");
+}
+
+// Made once: a new `pre` each render would be a new component type to React, which would then reload every
+// diagram (and lose the student's place in it) whenever the chat refreshes.
+const COMPONENTS: Components = {
+  a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noreferrer" />,
+  pre: ({ node, ...props }) => {
+    const viz = vizSource(node);
+    return viz === null ? <pre {...props} /> : <Viz source={viz} />;
+  },
+};
+
+/**
+ * The agent's markdown, with $math$ and $$display math$$. Raw HTML in it is shown as text, never run; the one
+ * exception is a ```viz block, an interactive diagram, which runs sealed in a frame of its own (Viz.tsx).
+ */
 export function Markdown({ text }: { text: string }) {
   const root = useRef<HTMLDivElement>(null);
   useFitEquations(root, text);
@@ -25,7 +48,7 @@ export function Markdown({ text }: { text: string }) {
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         urlTransform={transform}
-        components={{ a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noreferrer" /> }}
+        components={COMPONENTS}
       >
         {text}
       </ReactMarkdown>

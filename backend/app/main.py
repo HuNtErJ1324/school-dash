@@ -39,16 +39,22 @@ mimetypes.add_type("font/woff2", ".woff2")  # the Canvas tab's fonts; slim image
 
 class WebApp(StaticFiles):
     """The built UI. Page addresses it has no file for (/tutor, /tutor/12) get index.html, and the
-    page routes itself; missing files and API paths stay 404s."""
+    page routes itself; missing files and API paths stay 404s.
+
+    /viz/ holds the libraries the agent's diagrams load. A diagram runs in a frame with no origin of its own,
+    so its module scripts and fonts are cross-origin requests, which need the CORS header."""
 
     async def get_response(self, path: str, scope: Scope) -> Response:
+        parts = path.replace("\\", "/").strip("/").split("/")  # StaticFiles hands over an OS path
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
         except HTTPException as e:
-            parts = path.replace("\\", "/").strip("/").split("/")  # StaticFiles hands over an OS path
             if e.status_code != 404 or parts[0] == "api" or "." in parts[-1]:
                 raise
             return await super().get_response("index.html", scope)
+        if parts[0] == "viz":
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
