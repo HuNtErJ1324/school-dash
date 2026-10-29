@@ -164,19 +164,24 @@ MODES: dict[str, tuple[str, str | None]] = {
     "ask": ("Ask", None),
     "explain": ("Explain", "Help me understand this. Start by finding out what I already know: ask me to explain "
                 "it or try a small case, and wait. Build from my answer, supporting only the parts I can't do "
-                "yet, and once I've got a piece, have me use it on my own before moving on."),
+                "yet, and once I've got a piece, say so and have me use it on my own before moving on. When I've "
+                "got what I asked about, sum up what I learned and stop."),
     "quiz": ("Quiz me", "Quiz me on this. Ask one question at a time, taken from or modeled on the course's own "
              "practice material (lectures, readings, worked examples, review sheets, old exams; never open graded "
-             "homework), and wait for my answer. If I'm right, raise the bar: ask why, or give a harder or less "
-             "familiar variation. If I'm wrong, have me find my error before you explain it, and give the "
-             "smallest hint that gets me moving. Keep a running score."),
+             "homework), and wait for my answer. If I'm right, say so, then raise the bar: ask why, or give a "
+             "harder or less familiar variation. If I'm wrong, have me find my error before you explain it, and "
+             "give the smallest hint that gets me moving. Keep a running score. Once I've shown I know it "
+             "(several right, including a harder one), stop: give my score and anything to review, and offer more "
+             "if I want it."),
     "review": ("Exam review", "Help me review for this. Find out what it covers (syllabus, review sheets, the "
                "course's pages in the library), then test me with a few quick questions across those topics "
                "before explaining anything, to see what I already know. From that, make a short study plan for "
-               "the time left and work through it with me: support where I'm weak, harder problems where I'm not."),
+               "the time left and work through it with me: support where I'm weak, harder problems where I'm not. "
+               "When I've shown a topic, say so in a line and move on rather than asking more about it."),
     "canvas": ("Canvas", "We're working one problem together on a shared canvas (see \"The shared canvas\" in "
                "AGENTS.md): I write my work there and you add notes to it. The work is mine, so step in only when "
-               "I press Help or ask, with the lightest help that gets me moving."),
+               "I press Help or ask, with the lightest help that gets me moving, and tell me plainly when I've "
+               "got it right."),
 }  # fmt: skip
 
 # What the Canvas tab sends: the student set up a problem, pressed Help, or wrote in the chat beside it.

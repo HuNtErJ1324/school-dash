@@ -1,5 +1,27 @@
 # Results
 
+## 2026-10-28: `dashboard` v4, confirming answers and stopping once they've got it
+
+Two rules added to the dial section since v3, both from using the tutor: say plainly whether an answer is
+right before raising the bar ("Say so when they get it"), and once the student has shown what they came for,
+sum up and stop asking ("Stop when they've got it"). Same harness, data, sample, tutor and scorer as below;
+only `dashboard` was re-run.
+
+| Prompt | Appropriate scaffolding | Appropriate rigor | Avoids over-scaffolding | KL(S‖R) / KL(R‖S) |
+|---|---|---|---|---|
+| `dashboard` v1 | 0.95 (19/20) | 0.95 (19/20) | 0.975 (39/40) | 0.141 / 0.136 |
+| `dashboard` v2 | 0.95 (19/20) | 0.90 (18/20) | 0.95 (38/40) | 0.116 / 0.119 |
+| `dashboard` v4 | 1.00 (20/20) | 0.90 (18/20) | 0.95 (38/40) | 0.116 / 0.115 |
+
+**Paired**: v4 was right on 2 moments v1 wasn't and v1 on 2 v4 wasn't; against v2, 2 vs 1. The stopping rule
+didn't cost rigor: both v4 misses are rigor moments where the tutor did push for rigor and was marked for
+over-scaffolding. One (the even/odd moment) was also missed by v2. The other is the new rules' doing: the
+student finished 5/3 + 7/4, and the tutor's "Yes, 41/12 is right" went on to replay every step (5 × 4 = 20,
+3 × 7 = 21, …), which the scorer counted as doing the student's reflecting for them. Tutor turns without a
+question rose from 10 of 120 (v2) to 19 of 120, so the rules do change how often it stops asking.
+
+Follow-up, deployed but not re-run: both rules now say to name the takeaway in a phrase, not replay the steps.
+
 ## 2026-10-25 (later still): `dashboard` v3, spot-check of the two moments the rule touched
 
 The rigor-gap rule reworded and deployed: first ask what they know and build from that; if they can't

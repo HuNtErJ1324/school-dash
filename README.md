@@ -114,16 +114,24 @@ How it tutors follows TutorMoments ([Zhang et al., 2026](https://tutormoments.al
 which found that LLM tutors left to their defaults over-scaffold (do the student's thinking) and rarely
 push for rigor, and that spelling out the trade-off fixes most of it. So the agent's instructions put every
 reply on one dial: scaffold, lightest support first, when you're stuck or holding a misconception; push for
-rigor (why, a harder version, do it alone, check your own work) when you're getting it right. Explain
-sessions start from what you already know, quizzes get harder as you get them right, and exam reviews test
-you before explaining anything. In a session, **I'm stuck**, **Harder one** and **Let me try alone** tell it
+rigor (why, a harder version, do it alone) when you're getting it right. It says plainly when an answer is
+right, and once you've shown you understand what you came for, it sums up the takeaway and stops asking.
+Explain sessions start from what you already know, quizzes get harder as you get them right, and exam reviews
+test you before explaining anything. In a session, **I'm stuck**, **Harder one** and **Let me try alone** tell it
 where you are in one tap. Briefs give a ready check and a work plan, never the problems broken into steps.
 
 It's a reference and a planner, not a solver: its instructions follow the Allen School's "AI as
 a Reference Tool" policy, so it explains, plans and points to material, and
-won't write solutions or work assigned problems. Its citations (`doc:41#page=12`) open the
-document at that page. Each plan, brief and answer records what it cost, and `/api/agent`
-totals the month.
+won't write solutions or work assigned problems. On graded homework that's still open, it tells you
+whether an answer you reached yourself is right, but not where a wrong one goes wrong or how to fix it.
+Its citations (`doc:41#page=12`) open the document at that page. Each plan, brief and answer records
+what it cost, and `/api/agent` totals the month.
+
+It can also search the web, for what the library doesn't cover (tool docs, error messages, background),
+if you give prime-agent a [Serper](https://serper.dev) key: run
+`docker compose exec -w /workspace agent /opt/prime-agent/bin/prime-agent`, type `/mcp`, choose
+**Serper (web search)** and paste the key, then `/quit`. The key stays in prime-agent's own settings in
+`data/agent-home/`. The course library comes first, and it never searches for answers to graded work.
 
 ## The library
 
@@ -136,8 +144,10 @@ What the agent reads, under `data/library/`, with a text version of each file (P
 - **Canvas** (with the `canvas` source set up): syllabi, assignment descriptions, pages, and the
   files that modules, pages and descriptions link to. It uses the canvas source's session
   cookie, so it stops when that expires, like the source does.
-- **Yours:** **Add to library** in the Library widget takes a PDF, Word or PowerPoint file, or
-  pasted text: your textbook, lab specs from the course repository, notes on what an exam covers.
+- **Yours:** **Add to library** in the Library widget takes PDF, Word, PowerPoint and text files,
+  several at once or a whole folder (each titled by its path in it; hidden folders like `.git` are
+  left out), or pasted text: your textbook, lab specs from the course repository, notes on what an
+  exam covers.
 
 The library is read a minute after the server starts and every `library.interval_hours`;
 unchanged files aren't downloaded again.
@@ -293,7 +303,7 @@ form is generated from. It then shows up under Add widget. Overlay actions (`Don
   react-markdown with [KaTeX](https://katex.org) for math, and [Excalidraw](https://github.com/excalidraw/excalidraw)
   for the shared canvas.
 - **The agent:** prime-agent, an agent harness, running Claude (Opus) with a Python kernel and the
-  course library.
+  course library, and optionally [Serper](https://serper.dev) for web search.
 - **Hosting:** Docker Compose and [Tailscale](https://tailscale.com) (`tailscale serve`, no open ports).
 - **Look:** the [Rosé Pine](https://rosepinetheme.com) palette, Departure Mono and CommitMono.
 - **Evaluation:** [TutorMoments](https://github.com/allenai/tutormoments) (Allen AI) replays.

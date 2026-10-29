@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { docHref, type LibraryDoc, type LibraryRun, type UploadKind } from "../api";
-import { useLibrary, useLibraryChange } from "../agent/hooks";
+import { useLibrary, useLibraryChange, type UploadFile } from "../agent/hooks";
 import { courseStyle } from "../courses";
 import { useCourses, useNow } from "../hooks";
 import { useQuarter } from "../quarter";
@@ -159,32 +159,92 @@ const UPLOAD_KINDS: { value: UploadKind; label: string }[] = [
   { value: "other", label: "Something else" },
 ];
 
-/** Add a file (a textbook PDF, a spec from the lab repo) or paste text (what the TA said, exam topics). */
+// What the library can read (backend/app/library/extract.py); a folder's other files are left out.
+const DOC_EXTENSIONS = [".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".htm", ".c", ".h"];
+const MAX_UPLOAD_MB = 300;
+const SKIPPED_FOLDERS = new Set(["node_modules", "__pycache__"]);
+
+interface Picked {
+  docs: UploadFile[];
+  skipped: string[]; // paths the library can't read, or too big
+}
+
+const NOTHING: Picked = { docs: [], skipped: [] };
+
+/** The documents in a pick of files or a folder, each titled by its path inside the folder. Hidden folders (.git)
+ * and dependencies are left out quietly; files left out for their type or size are listed. */
+function pickDocs(list: FileList | null): Picked {
+  const docs: UploadFile[] = [];
+  const skipped: string[] = [];
+  for (const file of Array.from(list ?? [])) {
+    const parts = (file.webkitRelativePath || file.name).split("/");
+    const inside = parts.length > 1 ? parts.slice(1) : parts; // below the folder you picked
+    if (inside.some((p) => p.startsWith(".") || SKIPPED_FOLDERS.has(p))) continue;
+    const path = inside.join("/");
+    const dot = file.name.lastIndexOf(".");
+    const ext = dot > 0 ? file.name.slice(dot).toLowerCase() : "";
+    if (!DOC_EXTENSIONS.includes(ext)) skipped.push(path);
+    else if (!file.size) skipped.push(`${path} (empty)`);
+    else if (file.size > MAX_UPLOAD_MB * 2 ** 20) skipped.push(`${path} (over ${MAX_UPLOAD_MB} MB)`);
+    else docs.push({ file, title: path.slice(0, path.length - ext.length) });
+  }
+  return { docs: docs.sort((a, b) => a.title.localeCompare(b.title)), skipped };
+}
+
+/** "a, b, c and 4 more" */
+function someOf(names: string[], shown = 4): string {
+  return names.length <= shown + 1 ? names.join(", ") : `${names.slice(0, shown).join(", ")} and ${names.length - shown} more`;
+}
+
+/** Add files or a whole folder (a textbook PDF, the specs from the lab repo) or paste text (what the TA said, exam
+ * topics). */
 function AddDialog({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const stop = useRef<AbortController | null>(null);
   const headingId = useId();
   const courses = useCourses();
   const { upload, addText } = useLibraryChange();
-  const [mode, setMode] = useState<"file" | "text">("file");
+  const [mode, setMode] = useState<"files" | "folder" | "text">("files");
   const [courseId, setCourseId] = useState("");
   const [kind, setKind] = useState<UploadKind>("textbook");
   const [title, setTitle] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [picked, setPicked] = useState<Picked>(NOTHING);
+  const [progress, setProgress] = useState(0);
+  const [failed, setFailed] = useState<string[]>([]);
   const [text, setText] = useState("");
   const pending = upload.isPending || addText.isPending;
-  const error = upload.error ?? addText.error;
+  const error = addText.error;
+  const count = picked.docs.length;
+  const single = mode === "files" && count <= 1; // only then does a title apply
 
   useEffect(() => {
     ref.current?.showModal();
+    const controller = new AbortController();
+    stop.current = controller;
+    return () => controller.abort(); // closing stops a folder's upload after the file it's on
   }, []);
 
   const submit = () => {
-    const done = { onSuccess: () => ref.current?.close() };
-    if (mode === "file" && file) upload.mutate({ file, course_id: courseId, kind, title: title.trim() }, done);
+    if (mode !== "text" && count) {
+      const files = single && title.trim() ? [{ ...picked.docs[0], title: title.trim() }] : picked.docs;
+      setProgress(0);
+      setFailed([]);
+      upload.mutate(
+        { files, course_id: courseId, kind, onProgress: setProgress, signal: stop.current?.signal },
+        {
+          onSuccess: (left) => {
+            if (!left.length) return ref.current?.close();
+            setPicked({ docs: left, skipped: [] }); // Add again sends just these
+            setFailed(left.map((f) => `${f.title}: ${f.error}`));
+          },
+        },
+      );
+    }
     if (mode === "text" && title.trim() && text.trim())
-      addText.mutate({ title: title.trim(), text, course_id: courseId || null, kind }, done);
+      addText.mutate({ title: title.trim(), text, course_id: courseId || null, kind }, { onSuccess: () => ref.current?.close() });
   };
-  const canSubmit = !pending && (mode === "file" ? !!file : !!title.trim() && !!text.trim());
+  const canSubmit = !pending && (mode === "text" ? !!title.trim() && !!text.trim() : count > 0);
+  const plural = (n: number) => `${n} file${n === 1 ? "" : "s"}`;
 
   return (
     <dialog ref={ref} className="settings" aria-labelledby={headingId} onClose={onClose}>
@@ -208,37 +268,75 @@ function AddDialog({ onClose }: { onClose: () => void }) {
           sites don't have: your textbook, lab specs from the course repository, your notes.
         </p>
         <div className="segmented" role="radiogroup" aria-label="What to add">
-          {(["file", "text"] as const).map((m) => (
+          {(["files", "folder", "text"] as const).map((m) => (
             <label key={m}>
               <input
                 type="radio"
                 name="mode"
                 checked={mode === m}
+                disabled={pending}
                 onChange={() => {
                   setMode(m);
+                  setPicked(NOTHING);
+                  setFailed([]);
                   if (m === "text" && kind === "textbook") setKind("notes");
                 }}
               />
-              {m === "file" ? "A file" : "Text"}
+              {{ files: "Files", folder: "A folder", text: "Text" }[m]}
             </label>
           ))}
         </div>
-        {mode === "file" ? (
-          <label className="field">
-            <span className="field-label">File</span>
-            <input type="file" accept=".pdf,.docx,.pptx,.txt,.md,.html,.c,.h" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            <span className="field-help">PDF, Word, PowerPoint or text, up to 300 MB.</span>
-          </label>
+        {mode !== "text" ? (
+          <div className="field">
+            <label className="field">
+              <span className="field-label">{mode === "files" ? "Files" : "Folder"}</span>
+              <input
+                key={mode}
+                type="file"
+                multiple
+                accept={mode === "files" ? DOC_EXTENSIONS.join(",") : undefined}
+                // Not in React's types; Safari, Chrome and Firefox all pick a folder with it.
+                ref={(el) => {
+                  if (mode === "folder") el?.setAttribute("webkitdirectory", "");
+                }}
+                disabled={pending}
+                onChange={(e) => {
+                  setPicked(pickDocs(e.target.files));
+                  setFailed([]);
+                }}
+              />
+            </label>
+            <span className="field-help">
+              {mode === "files"
+                ? `PDF, Word, PowerPoint or text, up to ${MAX_UPLOAD_MB} MB each. Pick as many as you like.`
+                : `Every PDF, Word, PowerPoint and text file in it and its subfolders, up to ${MAX_UPLOAD_MB} MB each, ` +
+                  "titled by its path in the folder. Hidden folders like .git are left out."}
+            </span>
+            {(mode === "folder" || count > 1 || picked.skipped.length > 0) && (count > 0 || picked.skipped.length > 0) && (
+              <span className="field-help" title={[...picked.docs.map((d) => d.title), ...picked.skipped].join("\n")}>
+                {count ? `${plural(count)} to add: ${someOf(picked.docs.map((d) => d.title))}.` : "Nothing in it the library can read."}
+                {picked.skipped.length > 0 && ` Leaving out ${plural(picked.skipped.length)}: ${someOf(picked.skipped)}.`}
+              </span>
+            )}
+          </div>
         ) : (
           <label className="field">
             <span className="field-label">Text</span>
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder="The midterm covers chapters 1 to 6; no proofs from section 4.3…" />
           </label>
         )}
-        <label className="field">
-          <span className="field-label">Title{mode === "file" ? " (optional)" : ""}</span>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder={mode === "file" ? file?.name ?? "" : "Midterm topics"} />
-        </label>
+        {(mode === "text" || single) && (
+          <label className="field">
+            <span className="field-label">Title{mode === "files" ? " (optional)" : ""}</span>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              placeholder={mode === "files" ? (picked.docs[0]?.title ?? "") : "Midterm topics"}
+            />
+          </label>
+        )}
         <label className="field">
           <span className="field-label">Course</span>
           <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
@@ -261,12 +359,28 @@ function AddDialog({ onClose }: { onClose: () => void }) {
           </select>
         </label>
         {error && <p className="problem">{error.message}</p>}
+        {failed.length > 0 && (
+          <div className="problem">
+            Couldn't add {plural(failed.length)}; Add tries {failed.length === 1 ? "it" : "them"} again.
+            <ul className="upload-failures">
+              {failed.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="settings-actions">
           <button type="button" className="text-button" onClick={() => ref.current?.close()}>
-            Cancel
+            {upload.isPending ? "Stop" : "Cancel"}
           </button>
           <button type="submit" className="pill-button" disabled={!canSubmit}>
-            {pending ? (mode === "file" ? "Uploading and reading…" : "Adding…") : "Add"}
+            {addText.isPending
+              ? "Adding…"
+              : upload.isPending
+                ? `Uploading and reading${count > 1 ? ` ${Math.min(progress + 1, count)} of ${count}` : ""}…`
+                : count > 1
+                  ? `Add ${plural(count)}`
+                  : "Add"}
           </button>
         </div>
       </form>

@@ -163,8 +163,8 @@ function NewCanvas() {
       </button>
       {problem && <p className="problem">{problem}</p>}
       <p className="field-help tutor-note">
-        It gives hints and questions, not answers. On graded homework still open, it explains the ideas but won't check
-        your work.
+        It gives hints and questions, not answers. On graded homework still open, it explains the ideas and tells you
+        whether your answer is right, but won't check your steps.
       </p>
     </div>
   );

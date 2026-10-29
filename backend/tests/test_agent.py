@@ -52,18 +52,34 @@ def load_tools(ws: Path):
 def test_workspace_has_instructions_tools_and_models(workspace):
     agents = (workspace / "AGENTS.md").read_text(encoding="utf-8")
     assert "Academic integrity" in agents
+    # The web: after the library, and never for graded answers.
+    assert "## The web" in agents and "Never search for the answers to graded work" in agents
     # Tutoring turns on the scaffold/rigor dial, with both of its failure modes spelled out.
     assert "### The dial: scaffold or push for rigor" in agents
     assert "- Over-scaffolding: you do the thinking." in agents and "- Missed rigor:" in agents
     # A gap a rigor push turns up starts from what the student knows, not a re-explanation.
     assert "- When a push for rigor turns up a gap" in agents and "don't re-teach yet" in agents
     assert "not at what they missed" in agents
+    # A right answer gets a plain verdict first, not only another question.
+    assert "- Say so when they get it." in agents and "did I say so plainly, then raise the bar," in agents
+    # Once they've shown what they came for, a summary and no more questions.
+    assert "- Stop when they've got it." in agents and "sum up and stop asking?" in agents
+    # Open graded work: a verdict on the student's own answer, never where it goes wrong or the fix.
+    assert "Once they've reached an answer of their own, confirm it" in agents and "not which step goes" in agents
     # The canvas protocol the Canvas tab draws from (frontend/src/canvas/annotate.ts).
     assert "### The shared canvas" in agents and '"point_to": [x, y]' in agents and '{"circle": [x, y' in agents
     assert (workspace / "school.py").exists() and (workspace / "notes").is_dir()
     models = json.loads(Path(runner.HOME, ".prime", "agent", "models.json").read_text())
     opus = next(m for m in models["providers"]["anthropic"]["models"] if m["id"] == "claude-opus-5-5")
     assert opus["cost"] == {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite": 5}  # or every run looks free
+
+
+def test_prime_agent_opens_on_opus_and_keeps_other_settings(workspace):
+    settings = Path(runner.HOME, ".prime", "agent", "settings.json")
+    assert json.loads(settings.read_text())["defaultModel"] == "claude-opus-5-5"
+    settings.write_text(json.dumps({"theme": "dark", "defaultProvider": None, "defaultModel": None}))
+    runner.prepare_workspace()
+    assert json.loads(settings.read_text()) == {"theme": "dark", "defaultProvider": "anthropic", "defaultModel": "claude-opus-5-5"}
 
 
 def events(*lines: dict[str, Any]) -> str:
@@ -277,7 +293,7 @@ def test_tutoring_sessions(client):
     assert first.startswith("[Tutoring session: Quiz me (course CSE 410)]\nQuiz me on this. Ask one question at a time")
     assert first.endswith("\n\nVirtual memory") and "never open graded homework" in first
     # After a right answer it raises the bar; after a wrong one the student looks for the error first.
-    assert "If I'm right, raise the bar" in first and "have me find my error before you explain it" in first
+    assert "If I'm right, say so, then raise the bar" in first and "have me find my error before you explain it" in first
 
     # Later turns are just the student's words: the session already knows its mode.
     client.post(f"/api/conversations/{conv['id']}/messages", json={"text": "Page table entries"})

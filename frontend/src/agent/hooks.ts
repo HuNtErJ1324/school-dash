@@ -122,14 +122,41 @@ export function useLibrary() {
   });
 }
 
+export interface UploadFile {
+  file: File;
+  title: string;
+}
+
+interface UploadBatch {
+  files: UploadFile[];
+  course_id: string;
+  kind: UploadKind;
+  onProgress?: (done: number) => void;
+  signal?: AbortSignal; // stops before the next file
+}
+
 export function useLibraryChange() {
   const client = useQueryClient();
   const done = () => client.invalidateQueries({ queryKey: ["library"] });
   return {
     sync: useMutation({ mutationFn: api.syncLibrary, onSuccess: done }),
     upload: useMutation({
-      mutationFn: ({ file, ...fields }: { file: File; course_id: string; kind: UploadKind; title: string }) => api.upload(file, fields),
-      onSuccess: done,
+      // One file at a time, so a folder doesn't swamp the server. One that fails doesn't stop the rest: it comes
+      // back with why, to try again.
+      mutationFn: async ({ files, onProgress, signal, ...fields }: UploadBatch) => {
+        const failed: (UploadFile & { error: string })[] = [];
+        for (const [i, f] of files.entries()) {
+          if (signal?.aborted) break;
+          try {
+            await api.upload(f.file, { ...fields, title: f.title });
+          } catch (e) {
+            failed.push({ ...f, error: e instanceof Error ? e.message : String(e) });
+          }
+          onProgress?.(i + 1);
+        }
+        return failed;
+      },
+      onSettled: done,
     }),
     addText: useMutation({ mutationFn: api.addText, onSuccess: done }),
     remove: useMutation({ mutationFn: api.deleteDoc, onSuccess: done }),
