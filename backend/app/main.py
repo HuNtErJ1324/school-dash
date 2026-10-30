@@ -22,6 +22,7 @@ from .api_agent import router as agent_router
 from .api_canvas import router as canvas_router
 from .api_canvas import sessions as session_canvas_router
 from .api_library import router as library_router
+from .api_voice import router as voice_router
 from .config import Settings, load_config
 from .courses import sync_config_courses
 from .db import make_engine, make_sessionmaker
@@ -32,6 +33,7 @@ from .scheduler import Scheduler
 from .sources import build_sources
 from .sources.base import SourceContext
 from .sync import run_source
+from .voice import SpeechClient
 
 USER_AGENT = "school-dashboard/0.1 (personal, self-hosted)"
 mimetypes.add_type("font/woff2", ".woff2")  # the Canvas tab's fonts; slim images and Windows don't know it
@@ -95,6 +97,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.library = library
             app.state.library_sync = library_sync
             app.state.assistant = assistant
+            app.state.speech = SpeechClient(settings.speech_url, config.voice, http)
             app.state.background = set()
             app.state.uploads_dir = settings.data_dir / "uploads"
             app.state.canvases_dir = settings.data_dir / "canvases"
@@ -118,6 +121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(canvas_router)
     app.include_router(session_canvas_router)
     app.include_router(library_router)
+    app.include_router(voice_router)
     if settings.static_dir and settings.static_dir.is_dir():
         app.mount("/", WebApp(directory=settings.static_dir, html=True), name="web")
     return app

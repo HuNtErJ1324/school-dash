@@ -4,6 +4,8 @@ import { api, photoUrl, type Message } from "../api";
 import { chatText } from "../canvas/reply";
 import { Link } from "../router";
 import { CameraIcon, CloseIcon } from "../ui/icons";
+import { unlock, useReadAloud } from "../voice/player";
+import { MicButton, ReadAloudToggle, SpeakButton, useReadNewReplies, useVoiceTools } from "../voice/Voice";
 import { useAgent, useAsk, useConversation } from "./hooks";
 import { Markdown } from "./Markdown";
 
@@ -68,6 +70,7 @@ export function Chat({ conversationId, onStarted, itemId, placeholder }: {
 }
 
 export function MessageList({ messages }: { messages: Message[] }) {
+  useReadNewReplies(messages);
   return (
     <ol className="chat-messages">
       {messages.map((m) => (
@@ -90,7 +93,10 @@ export function MessageList({ messages }: { messages: Message[] }) {
           ) : m.status === "error" ? (
             <p className="problem">{m.error}</p>
           ) : (
-            <Markdown text={chatText(m.text)} />
+            <>
+              <SpeakButton message={m} />
+              <Markdown text={chatText(m.text)} />
+            </>
           )}
         </li>
       ))}
@@ -111,7 +117,9 @@ interface Attaching {
  * The question box. Enter sends, Shift+Enter starts a new line. `done` clears it once sent.
  * With `photos`, a camera button attaches up to four photos (on a phone it offers the camera);
  * each uploads as soon as it's picked, and a message can be just photos (sent as `photoOnlyText`).
- * `tools` are more buttons, stacked above it.
+ * `tools` are more buttons, stacked above it. Once the speech container is set up, a mic button beside Send puts
+ * what you say in the box (`voiceContext`, what the conversation is about, helps it spell the course's terms), and
+ * another reads replies aloud as they arrive.
  */
 export function Composer({
   onSend,
@@ -124,6 +132,7 @@ export function Composer({
   photoOnlyText = "Here's my work.",
   submitLabel = "Send",
   tools,
+  voiceContext,
 }: {
   onSend: (text: string, photos: string[], done: () => void) => void;
   busy: boolean;
@@ -135,8 +144,13 @@ export function Composer({
   photoOnlyText?: string;
   submitLabel?: string;
   tools?: ReactNode;
+  voiceContext?: string;
 }) {
   const [text, setText] = useState("");
+  const [voiceProblem, setVoiceProblem] = useState<string | null>(null);
+  const voice = useVoiceTools();
+  const readAloud = useReadAloud();
+  const box = useRef<HTMLTextAreaElement>(null);
   const [attached, setAttached] = useState<Attaching[]>([]);
   const picker = useRef<HTMLInputElement>(null);
   const previews = useRef<string[]>([]);
@@ -160,11 +174,17 @@ export function Composer({
     }
     if (picker.current) picker.current.value = "";
   };
+  const heard = (said: string) => {
+    setText((t) => (t.trim() ? `${t.trimEnd()} ${said}` : said));
+    if (window.matchMedia("(min-width: 761px)").matches) box.current?.focus(); // not on phones: it would open the keyboard
+  };
   const unattach = (key: string) => setAttached((list) => list.filter((a) => a.key !== key));
 
   const send = () => {
     const question = text.trim() || (ready.length ? photoOnlyText : "");
     if ((!question && !ready.length) || busy || uploading) return;
+    if (readAloud) unlock(); // a tap, so the reply can be read when it comes
+    setVoiceProblem(null);
     onSend(question, ready, () => {
       setText("");
       setAttached([]);
@@ -178,6 +198,7 @@ export function Composer({
         send();
       }}
     >
+      {voiceProblem && <p className="problem composer-problem">{voiceProblem}</p>}
       {attached.length > 0 && (
         <ul className="attaching" aria-label="Photos to send">
           {attached.map((a) => (
@@ -212,6 +233,7 @@ export function Composer({
         </div>
       )}
       <textarea
+        ref={box}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
@@ -226,6 +248,12 @@ export function Composer({
         aria-label={label}
         autoFocus={autoFocus}
       />
+      {(voice.mic || voice.readAloud) && (
+        <div className={voice.mic && voice.readAloud ? "composer-tools stacked" : "composer-tools"}>
+          {voice.mic && <MicButton onText={heard} onProblem={setVoiceProblem} context={voiceContext} />}
+          {voice.readAloud && <ReadAloudToggle />}
+        </div>
+      )}
       <button type="submit" className="pill-button" disabled={(!text.trim() && !ready.length) || busy || uploading}>
         {submitLabel}
       </button>

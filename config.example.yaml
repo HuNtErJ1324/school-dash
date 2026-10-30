@@ -54,6 +54,15 @@ planner:
   brief_days: 10 # each morning, write briefs for assignments and exams due within this many days
   max_briefs: 4 # ...at most this many a morning
 
+# Talking to the tutor, through the speech container (docker-compose.yml): Whisper writes down what you say,
+# Kokoro reads replies aloud. The models must be ones the container downloads (its PRELOAD_MODELS).
+voice:
+  stt_model: deepdml/faster-whisper-large-v3-turbo-ct2
+  tts_model: speaches-ai/Kokoro-82M-v1.0-ONNX
+  voice: af_heart # or af_bella, af_nicole, am_michael, am_fenrir, bf_emma, bm_george, ...
+  speed: 1.0 # 0.5 to 2
+  language: en # what you speak; "" lets Whisper guess
+
 # Course documents the agent reads. Every course's `links.site` above is read (its pages, the
 # PDFs they link, shared Google slides); list more sites here. With the canvas source set up,
 # Canvas syllabi, assignment descriptions, pages and files are read too. Add textbooks and

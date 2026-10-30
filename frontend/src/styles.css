@@ -2009,6 +2009,54 @@ a.week-block:hover {
   height: 31px;
 }
 
+/* Voice, beside Send: the mic is the color of "now" while it listens, and pulses while it writes down what you
+   said; reading aloud, when it's on, is the tutor's color. */
+.mic-recording,
+.mic-recording:hover {
+  color: var(--bg);
+  background: var(--love);
+}
+
+.mic-hearing,
+.msg-speak.loading {
+  animation: voice-busy 1s ease-in-out infinite alternate;
+}
+
+.mic:disabled {
+  cursor: progress;
+}
+
+@keyframes voice-busy {
+  to {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-hearing,
+  .msg-speak.loading {
+    animation: none;
+  }
+}
+
+.read-aloud[aria-pressed="true"],
+.msg-speak[aria-pressed="true"] {
+  color: var(--foam);
+}
+
+.composer-problem {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+}
+
+/* Read aloud: in the reply's top corner, with its words flowing around it. */
+.msg-speak {
+  float: right;
+  width: 26px;
+  height: 26px;
+  margin: -5px -8px 2px 8px;
+}
+
 /* Photos waiting to be sent: thumbnails above the box, each with a remove button. */
 .attaching {
   display: flex;

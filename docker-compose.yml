@@ -33,6 +33,7 @@ services:
       HOST: 0.0.0.0 # on this stack's network only: nothing is published on the host
       TZ: America/Los_Angeles
       AGENT_URL: http://agent:8790
+      SPEECH_URL: http://speech:8000
     expose: ["8000"]
     volumes:
       - ./config.yaml:/config/config.yaml:ro
@@ -47,6 +48,8 @@ services:
     build: .
     user: "${PUID:-1000}:${PGID:-1000}"
     command: ["python", "-m", "app.agent.runner"]
+    # Python as PID 1 ignores SIGTERM, so a Docker restart had to kill it, and then didn't start it again
+    init: true
     environment:
       TZ: America/Los_Angeles
       HOME: /prime-home
@@ -63,5 +66,36 @@ services:
       - ${PRIME_AGENT_DIR:-./prime-agent}:/opt/prime-agent:ro # prime-agent's install folder (set in .env)
     restart: unless-stopped
 
+  # Voice for tutoring: Speaches, an OpenAI-style speech server, with Whisper (what you say) and Kokoro (reading
+  # replies) on the GPU. Only the app talks to it, and it keeps no audio. The models download on the first start
+  # (about 2 GB, into the speech-models volume) and stay loaded; together they fit on a 4 GB card.
+  # Needs the NVIDIA driver and Container Toolkit on the host (README). Without a GPU, use the 0.9.0-rc.3-cpu image
+  # and delete `deploy`; or delete this service, and replies are read in the browser's own voice.
+  speech:
+    # 0.9 or newer: latest-cuda is still 0.8.3, which ignores PRELOAD_MODELS and the *_MODEL_TTLs below
+    image: ghcr.io/speaches-ai/speaches:0.9.0-rc.3-cuda
+    environment:
+      # config.yaml's voice.stt_model and voice.tts_model
+      PRELOAD_MODELS: '["deepdml/faster-whisper-large-v3-turbo-ct2", "speaches-ai/Kokoro-82M-v1.0-ONNX"]'
+      # No float16 anywhere: GTX 16xx cards garble it ("!!!!", or "We'll see you next time." for anything), and
+      # plain int8 uses float16 for the layers it doesn't quantize. Newer cards can use int8_float16.
+      WHISPER__COMPUTE_TYPE: int8_float32
+      STT_MODEL_TTL: -1 # never unload: loading takes seconds, and the first reply would wait for it
+      TTS_MODEL_TTL: -1
+      ENABLE_UI: "false"
+      LOG_LEVEL: info
+    expose: ["8000"]
+    volumes:
+      - speech-models:/home/ubuntu/.cache/huggingface/hub
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
 volumes:
   tailscale-state:
+  speech-models:

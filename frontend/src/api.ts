@@ -158,6 +158,13 @@ export interface AgentStatus {
   spent_this_month: number;
 }
 
+/** What the speech container can do: take dictation (stt) and read replies in its voice (tts). */
+export interface VoiceStatus {
+  stt: boolean;
+  tts: boolean; // otherwise the browser's own voice reads them
+  problem: string | null;
+}
+
 /** A library document (doc_id, with pages) or a web page (url). */
 export interface Resource {
   title: string;
@@ -418,6 +425,27 @@ export const api = {
     return request<Photo>("POST", "/api/uploads", { body: form });
   },
   deleteConversation: (id: number) => request<void>("DELETE", `/api/conversations/${id}`),
+
+  voice: () => request<VoiceStatus>("GET", "/api/voice"),
+  /** What was said in a recording. `context` (the course, the topic) helps it spell the course's terms. */
+  transcribe: (audio: Blob, context = "") => {
+    const form = new FormData();
+    const ext = audio.type.includes("mp4") ? "m4a" : audio.type.includes("ogg") ? "ogg" : "webm";
+    form.set("file", audio, `speech.${ext}`);
+    form.set("context", context.slice(0, 500));
+    return request<{ text: string }>("POST", "/api/voice/transcribe", { body: form });
+  },
+  /** `text` read aloud, as MP3. */
+  speak: async (text: string, signal?: AbortSignal): Promise<Blob> => {
+    const res = await fetch("/api/voice/speak", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal,
+    });
+    if (!res.ok) throw new HttpError(await problem(res, `Reading aloud failed with HTTP ${res.status}`), res.status);
+    return res.blob();
+  },
 
   canvases: () => request<CanvasSummary[]>("GET", "/api/canvases"),
   canvas: (id: number) => request<CanvasData>("GET", `/api/canvases/${id}`),

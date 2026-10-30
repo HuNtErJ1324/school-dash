@@ -105,6 +105,17 @@ class PlannerConfig(BaseModel):
     max_briefs: int = 4  # per morning, so a new quarter doesn't spend a lot at once
 
 
+class VoiceConfig(BaseModel):
+    """Talking to the tutor, through the speech container (Speaches): Whisper hears you, Kokoro reads replies.
+    The models must be ones the container has downloaded (its PRELOAD_MODELS in docker-compose.yml)."""
+
+    stt_model: str = "deepdml/faster-whisper-large-v3-turbo-ct2"
+    tts_model: str = "speaches-ai/Kokoro-82M-v1.0-ONNX"
+    voice: str = "af_heart"  # Kokoro's voices: af_heart, af_bella, am_michael, bf_emma, bm_george, ...
+    speed: float = Field(1.0, ge=0.5, le=2.0)
+    language: str = "en"  # what you speak; "" lets Whisper guess
+
+
 class AppConfig(BaseModel):
     quarter: str | None = None  # unused: the dashboard works out the quarter (quarters.py)
     timezone: str = "America/Los_Angeles"
@@ -113,6 +124,7 @@ class AppConfig(BaseModel):
     library: LibraryConfig = Field(default_factory=LibraryConfig)
     agent: AgentConfig = Field(default_factory=AgentConfig)
     planner: PlannerConfig = Field(default_factory=PlannerConfig)
+    voice: VoiceConfig = Field(default_factory=VoiceConfig)
 
 
 def load_config(path: Path) -> AppConfig:
@@ -131,6 +143,7 @@ class Settings(BaseModel):
     static_dir: Path | None = None
     sync_on_start: bool = True
     agent_url: str | None = None  # the agent container's runner (docker compose sets http://agent:8790)
+    speech_url: str | None = None  # the speech container (docker compose sets http://speech:8000)
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -141,4 +154,5 @@ class Settings(BaseModel):
             static_dir=Path(static) if static else None,
             sync_on_start=os.environ.get("SYNC_ON_START", "1").lower() not in ("0", "false", "no"),
             agent_url=os.environ.get("AGENT_URL") or None,
+            speech_url=os.environ.get("SPEECH_URL") or None,
         )

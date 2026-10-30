@@ -338,6 +338,7 @@ function Board({ canvas, initial, session }: { canvas: CanvasData; initial: Exca
                     label="Your message"
                     busy={busy}
                     onSend={(text, _photos, done) => void send("chat", text).then((ok) => ok && done())}
+                    voiceContext={session?.title ?? title}
                   />
                 </>
               )}

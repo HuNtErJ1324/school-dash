@@ -40,3 +40,9 @@ export const CameraIcon = () => <Icon d="M2.5 5.5a1 1 0 011-1h2l1-1.5h3l1 1.5h2a
 export const CanvasIcon = () => (
   <Icon d="M2.5 3a.5.5 0 01.5-.5h10a.5.5 0 01.5.5v7.5a.5.5 0 01-.5.5H3a.5.5 0 01-.5-.5V3zM5.5 13.5L8 11l2.5 2.5M5 8.5c1-2.5 2-2.5 2.5-1s1.5 1.5 3.5-2" />
 );
+export const MicIcon = () => <Icon d="M6 3a2 2 0 014 0v4a2 2 0 01-4 0V3zM3.5 7a4.5 4.5 0 009 0M8 11.5v2.5M5.5 14h5" />;
+export const StopIcon = () => <Icon d="M4.5 4.5h7v7h-7z" />;
+export const SpeakerIcon = () => <Icon d="M2.5 6h2.5l3.5-3v10L5 10H2.5V6zM11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9" />;
+export const HeadphonesIcon = () => (
+  <Icon d="M2.5 10V8a5.5 5.5 0 0111 0v2M2.5 10h2v3.5h-1a1 1 0 01-1-1V10zM13.5 10h-2v3.5h1a1 1 0 001-1V10z" />
+);

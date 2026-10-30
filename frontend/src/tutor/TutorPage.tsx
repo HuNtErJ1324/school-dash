@@ -214,6 +214,7 @@ function NewSession() {
           placeholder={MODE[mode].placeholder}
           busy={ask.isPending}
           onSend={start}
+          voiceContext={[courses.data?.find((c) => c.id === courseId)?.code, focus?.title].filter(Boolean).join(" · ")}
           autoFocus={window.matchMedia("(min-width: 761px)").matches} // not on phones: it would open the keyboard
           photos
         />
@@ -288,7 +289,7 @@ function Session({ id, canvas }: { id: number; canvas: boolean }) {
           />
         </Suspense>
       ) : (
-        <SessionChat conversation={c} />
+        <SessionChat conversation={c} voiceContext={course ? `${course.code} · ${c.title}` : c.title} />
       )}
       {/* Below the reply box, so scrolling to it shows the whole last message above the pinned box. */}
       <div ref={end} />
@@ -297,7 +298,7 @@ function Session({ id, canvas }: { id: number; canvas: boolean }) {
 }
 
 /** A session's chat, when its canvas isn't open. */
-function SessionChat({ conversation: c }: { conversation: Conversation }) {
+function SessionChat({ conversation: c, voiceContext }: { conversation: Conversation; voiceContext: string }) {
   const agent = useAgent();
   const ask = useAsk();
   const id = c.id;
@@ -331,6 +332,7 @@ function SessionChat({ conversation: c }: { conversation: Conversation }) {
               busy={answering || ask.isPending}
               onSend={(text, photos, done) => ask.mutate({ id, text, photos }, { onSuccess: done })}
               photos
+              voiceContext={voiceContext}
               tools={
                 <button
                   type="button"

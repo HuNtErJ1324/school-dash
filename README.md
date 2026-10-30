@@ -109,6 +109,15 @@ else: no cookies, no `.env`. The dashboard asks it for three things:
   question or an example by hand. The session keeps its
   mode; Help and messages sent from there carry a snapshot, and the tutor can pin a problem over the
   canvas for you to work. Deleting the session deletes its canvas.
+- **Talking instead of typing**, in any reply box once the `speech` container is running. The mic beside **Send**
+  records you (tap it again when you're done) and puts what you said in the box, for you to check and send. Whisper is
+  told your course names and the session's topic first, so it spells "semaphore" and "Riemann" the way your courses
+  do. The speaker in a reply's corner reads it aloud, and the headphones button reads every reply as it arrives (on
+  that device, until you turn it off), so you can work on the canvas, pen in hand, and listen. Math is said the way a
+  teacher would say it ("the limit as n goes to infinity of 1 over n"); diagrams and code are mentioned, not read.
+  The voice and its speed are `voice:` in config.yaml. When the speech container isn't answering, the mic hides and
+  replies are read in the browser's own voice. Recordings go to the speech container and nowhere else, and nothing
+  keeps them.
 - **Diagrams you can play with**, in any answer or brief: when watching something move would teach it better
   than words (a recursion tree unfolding, a page-table walk, rectangles narrowing under a Riemann sum), the agent
   draws an interactive diagram with buttons and sliders, in plain SVG or with D3, p5.js, three.js or KaTeX, which
@@ -197,9 +206,15 @@ prime-agent and `ANTHROPIC_API_KEY`).
 2. `cp .env.example .env` and fill in `TS_AUTHKEY` and `CANVAS_FEED_URL`, and for the agent
    `ANTHROPIC_API_KEY`, `PRIME_AGENT_DIR` (where prime-agent is installed) and your `PUID`/`PGID`.
 3. `cp config.example.yaml config.yaml` and edit it (your section, course colors, your hours).
-4. `mkdir -p data/agent-home data/agent-workspace data/snapshot data/library data/uploads` (so these are
-   yours, not root's), then `docker compose up -d --build`.
-5. Open `https://school.<your-tailnet>.ts.net`. On your phone, use Share → Add to Home
+4. For voice, the `speech` container needs the server's NVIDIA GPU (4 GB of video memory is enough): install the
+   NVIDIA driver, 575 or newer, and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+   (then `sudo nvidia-ctk runtime configure --runtime=docker` and `sudo systemctl restart docker`). Check that
+   containers see the GPU with `docker run --rm --gpus all ubuntu nvidia-smi`. On an older driver, use the image
+   tag `0.9.0-rc.3-cuda-12.4.1`. With no GPU, see the `speech` service's comment in `docker-compose.yml`.
+5. `mkdir -p data/agent-home data/agent-workspace data/snapshot data/library data/uploads` (so these are
+   yours, not root's), then `docker compose up -d --build`. The speech container downloads its models (about
+   2 GB) the first time; `docker compose logs -f speech` shows when it's ready.
+6. Open `https://school.<your-tailnet>.ts.net`. On your phone, use Share → Add to Home
    Screen to get it as an app.
 
 After editing `config.yaml`, run `docker compose restart app`. After changing `.env`, run
