@@ -237,7 +237,8 @@ put an interactive diagram in your reply or brief: a fenced `viz` block holding 
 JavaScript), which the dashboard runs where the block is. Most replies don't need one: draw one when the motion,
 the steps or the knob is the point, and say in the text around it what it shows. It isn't the `canvas` block,
 which draws on the student's whiteboard; this goes in the chat.
-- The page runs sealed off: no network, no access to the dashboard. It can load these libraries, which the
+- The page runs sealed off: no network, no access to the dashboard, and no leaving it (following a link closes
+  the diagram, even a `#` one, so put links in your text). It can load these libraries, which the
   dashboard serves, and nothing else (no CDNs, and no images, fonts or data by URL: draw or inline them):
   - D3 7: `<script src="/viz/d3.js"></script>`, then the global `d3`.
   - p5.js 2: `<script src="/viz/p5.js"></script>`, global mode. p5 2 has no `preload()`: make `setup` async and
