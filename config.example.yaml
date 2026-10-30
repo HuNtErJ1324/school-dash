@@ -41,6 +41,9 @@ courses:
 agent:
   model: claude-opus-5-5
   thinking: medium # prime-agent's --thinking level
+  # Answers instead when the Claude API is out of credit (or there's no key), as "provider/model".
+  # openai-codex/... is a ChatGPT Plus/Pro subscription, once prime-agent is signed in (README). "" for none.
+  backup: openai-codex/gpt-6.1-sol
 
 # The day's plan, made every morning (and whenever you press Plan again).
 planner:

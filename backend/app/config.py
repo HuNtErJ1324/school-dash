@@ -91,6 +91,9 @@ class LibraryConfig(BaseModel):
 class AgentConfig(BaseModel):
     model: str = "claude-opus-5-5"
     thinking: str = "medium"  # prime-agent's --thinking level
+    # "provider/model" that answers when the Claude API is out of credit (or has no key): openai-codex/... is
+    # a ChatGPT Plus/Pro subscription, used once prime-agent is signed in to it (README). "" for none.
+    backup: str = Field("openai-codex/gpt-6.1-sol", pattern=r"^$|^[\w.-]+/[\w./-]+$")
 
 
 class PlannerConfig(BaseModel):

@@ -78,8 +78,8 @@ your uploads ─┘   (backend/app/     │      │              │           
 The `agent` container runs prime-agent, an agent harness, with its own persistent
 home (sessions and memory), a workspace with instructions (`AGENTS.md`) and helpers
 (`school.py`), a read-only snapshot of the dashboard's database, and the course library,
-read-only. It gets the Claude API key and nothing else: no cookies, no `.env`. The dashboard
-asks it for three things:
+read-only. It gets the Claude API key (and a ChatGPT sign-in, if you give it one) and nothing
+else: no cookies, no `.env`. The dashboard asks it for three things:
 
 - **Today's plan**, every morning at `planner.time` and whenever you press **Plan again** (where
   you can add a note: "only two hours today"). Two to six concrete tasks sized to the hours you
@@ -139,6 +139,15 @@ if you give prime-agent a [Serper](https://serper.dev) key: run
 `docker compose exec -w /workspace agent /opt/prime-agent/bin/prime-agent`, type `/mcp`, choose
 **Serper (web search)** and paste the key, then `/quit`. The key stays in prime-agent's own settings in
 `data/agent-home/`. The course library comes first, and it never searches for answers to graded work.
+
+**When the Claude credits run out**, a ChatGPT Plus/Pro subscription can stand in (`agent.backup`, GPT-6.1
+Sol unless you pick another). Sign in once on the server's own desktop, since ChatGPT's sign-in returns to
+`localhost:1455` on the machine with the browser: run `PRIME_AGENT_CODING_AGENT_DIR=~/chatgpt-login
+prime-agent --no-session`, type `/login`, choose ChatGPT Plus/Pro, sign in, and `/quit`. Then copy the
+`openai-codex` entry of `~/chatgpt-login/auth.json` into `data/agent-home/.prime/agent/auth.json` (keep it
+mode 600) and delete `~/chatgpt-login`. From then on, when Claude says the account is out of credit, the backup
+answers in the same conversation, and Claude is tried again half an hour later. The subscription's usage
+limits apply, and its answers count as free in the month's total.
 
 ## The library
 

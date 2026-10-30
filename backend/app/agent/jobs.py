@@ -114,8 +114,8 @@ class Assistant:
             )  # fmt: skip
         return {
             "enabled": self.client.enabled,
-            "ready": usable(health),
-            "problem": problem(health) if self.client.enabled else None,
+            "ready": usable(health, self.config.agent.backup),
+            "problem": problem(health, self.config.agent.backup) if self.client.enabled else None,
             "model": self.config.agent.model,
             "busy": self.lock.locked() or bool(health.get("busy")),
             "next_plan_at": self.next_morning() if self.client.enabled else None,
@@ -357,8 +357,8 @@ class Assistant:
 
     async def morning(self) -> None:
         health = await self.client.health()
-        if not usable(health):
-            log.info("no morning plan: %s", problem(health))
+        if not usable(health, self.config.agent.backup):
+            log.info("no morning plan: %s", problem(health, self.config.agent.backup))
             return
         for item_id in await asyncio.to_thread(self.briefs_wanted):
             await self.run_brief(self.new_brief(item_id))
@@ -407,15 +407,15 @@ def _record(row: Plan | Brief, reply: AgentReply, now: datetime) -> None:
     row.answer, row.model, row.cost, row.seconds, row.finished_at = reply.text, reply.model, reply.cost, reply.seconds, now
 
 
-def usable(health: dict[str, Any]) -> bool:
-    return bool(health.get("ok") and health.get("prime_agent") and health.get("api_key"))
+def usable(health: dict[str, Any], backup: str = "") -> bool:
+    return problem(health, backup) is None
 
 
-def problem(health: dict[str, Any]) -> str | None:
+def problem(health: dict[str, Any], backup: str = "") -> str | None:
     if not health.get("ok"):
         return health.get("error") or "The agent container isn't answering."
     if not health.get("prime_agent"):
         return "prime-agent isn't installed in the agent container: set PRIME_AGENT_DIR in .env."
-    if not health.get("api_key"):
+    if not health.get("api_key") and not (backup and backup.split("/")[0] in (health.get("logins") or [])):
         return "Add your Claude API key to .env as ANTHROPIC_API_KEY, then restart the stack."
     return None

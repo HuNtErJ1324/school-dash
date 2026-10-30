@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -415,32 +416,65 @@ def _invoke(cmd: list[str], env: dict[str, str]) -> dict:
             "tool_calls": tools, "error": err, "code": p.returncode}  # fmt: skip
 
 
-def ask(thread: str, prompt: str, system: str, model: str, thinking: str = "medium") -> dict:
-    """Ask within a thread, resuming its prime-agent session so history and memory carry over."""
+def _logins() -> list[str]:
+    """The providers signed in with prime-agent's /login (names only)."""
+    try:
+        with open(os.path.join(HOME, ".prime", "agent", "auth.json"), encoding="utf-8") as f:
+            return sorted(json.load(f))
+    except (OSError, ValueError):
+        return []
+
+
+# What Claude says when the API credits are used up, or a spend limit is reached.
+OUT_OF_CREDIT = re.compile(r"credit balance|purchase credits|usage limits", re.I)
+RETRY_CLAUDE = 1800  # s: once Claude is out of credit, how long the backup answers before Claude is tried again
+_claude_out_until = 0.0
+
+
+def ask(thread: str, prompt: str, system: str, model: str, thinking: str = "medium", backup: str = "") -> dict:
+    """Ask within a thread, resuming its prime-agent session so history and memory carry over. Claude (`model`)
+    answers, or the backup ("provider/model", AgentConfig.backup) when Claude is out of credit or has no key."""
+    global _claude_out_until
     key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
+    if not key and not backup:
         raise RuntimeError("The agent has no Claude API key: add ANTHROPIC_API_KEY to .env and restart the stack.")
     env = {
-        "HOME": HOME, "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"), "ANTHROPIC_API_KEY": key,
+        "HOME": HOME, "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
         "TZ": os.environ.get("TZ", "America/Los_Angeles"),
         "PRIME_DISABLE_VERSION_CHECK": "1", "PRIME_AGENT_TELEMETRY": "0", "DO_NOT_TRACK": "1",
+        **({"ANTHROPIC_API_KEY": key} if key else {}),
     }  # fmt: skip
-    base = [_bin(), "-p", "--mode", "json", "--provider", "anthropic", "--model", model,
-            "--thinking", thinking, "--append-system-prompt", system]  # fmt: skip
+    runs = [("anthropic", model)] if key and (time.time() >= _claude_out_until or not backup) else []
+    if backup:
+        runs.append(tuple(backup.split("/", 1)))
     with _slot:
         _take_outbox()  # anything a crashed request left behind isn't this request's
         sid = _threads().get(thread)
         t0 = time.time()
-        res = _invoke(base + (["--resume", sid, "--", prompt] if sid else ["--", prompt]), env)
-        if sid and (res["code"] != 0 or not res["text"]) and "session" in (res["error"] or "").lower():
-            res = _invoke(base + ["--", prompt], env)  # session file gone: start a fresh one
+        for provider, name in runs:
+            base = [_bin(), "-p", "--mode", "json", "--provider", provider, "--model", name,
+                    "--thinking", thinking, "--append-system-prompt", system]  # fmt: skip
+            res = _invoke(base + (["--resume", sid, "--", prompt] if sid else ["--", prompt]), env)
+            if sid and (res["code"] != 0 or not res["text"]) and "session" in (res["error"] or "").lower():
+                res = _invoke(base + ["--", prompt], env)  # session file gone: start a fresh one
+            if provider != "anthropic":
+                res["cost"] = 0  # a subscription's, so prime-agent's API-price estimate isn't what it cost
+            if provider == "anthropic" and backup and not res["text"] and OUT_OF_CREDIT.search(res["error"] or ""):
+                _claude_out_until = time.time() + RETRY_CLAUDE
+                _take_outbox()  # the backup starts the request over
+                continue
+            break
         if res["session"] and res["text"]:
             _save_thread(thread, res["session"])
         res["ops"] = _take_outbox()
         res["seconds"] = round(time.time() - t0, 1)
     if res["error"] and not res["text"] and not res["ops"]:
         e = res["error"]
-        if "401" in e or "authentication" in e.lower() or "api key" in e.lower():
+        if provider != "anthropic" and provider not in _logins():
+            raise RuntimeError(f"The backup model ({backup}) isn't signed in: see the README.")
+        if provider == "anthropic" and OUT_OF_CREDIT.search(e):
+            raise RuntimeError("The Claude API is out of credit. Add credit, or set up a backup (agent.backup).")
+        if provider == "anthropic" and ("401" in e or "authentication" in e.lower() or "api key" in e.lower()):
             raise RuntimeError("Claude rejected the API key. Check ANTHROPIC_API_KEY in .env.")
         raise RuntimeError(f"prime-agent couldn't answer: {e[:300]}")
     return res
@@ -463,14 +497,15 @@ class _Handler(BaseHTTPRequestHandler):
             installed = bool(os.environ.get("PRIME_AGENT_BIN") and os.path.exists(os.environ["PRIME_AGENT_BIN"])
                              or shutil.which("prime-agent"))  # fmt: skip
             return self._json({"ok": True, "prime_agent": installed, "api_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
-                               "busy": _slot.locked()})  # fmt: skip
+                               "logins": _logins(), "busy": _slot.locked()})  # fmt: skip
         self._json({"error": "not found"}, 404)
 
     def do_POST(self) -> None:
         try:
             b = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             if self.path == "/ask":
-                return self._json(ask(b["thread"], b["prompt"], b["system"], b["model"], b.get("thinking") or "medium"))
+                return self._json(ask(b["thread"], b["prompt"], b["system"], b["model"], b.get("thinking") or "medium",
+                                      b.get("backup") or ""))  # fmt: skip
             if self.path == "/reset":
                 _save_thread(b["thread"], None)
                 return self._json({"ok": True})

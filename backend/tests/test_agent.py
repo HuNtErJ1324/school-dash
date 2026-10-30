@@ -16,6 +16,7 @@ from sqlalchemy import select
 from app.agent import runner
 from app.agent.client import AgentReply
 from app.agent.context import snapshot_db
+from app.agent.jobs import problem, usable
 from app.config import Settings
 from app.main import create_app
 from app.models import Brief, Item
@@ -37,6 +38,7 @@ def workspace(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "OUTBOX", str(ws / "outbox"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("PRIME_AGENT_BIN", str(tmp_path / "prime-agent"))
+    monkeypatch.setattr(runner, "_claude_out_until", 0.0)
     (tmp_path / "prime-agent").write_text("")
     runner.prepare_workspace()
     return ws
@@ -118,6 +120,71 @@ def test_ask_needs_an_api_key(workspace, monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY")
     with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
         runner.ask("t", "p", "s", "claude-opus-5-5")
+
+
+NO_CREDIT = "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+
+
+def fake_prime_agent(calls: list[list[str]], claude_error: str | None = None):
+    """Answers as whichever model it's asked for, or fails Claude's requests with `claude_error`."""
+
+    def run(cmd, **kw):
+        calls.append(cmd)
+        model = cmd[cmd.index("--model") + 1]
+        if claude_error and cmd[cmd.index("--provider") + 1] == "anthropic":
+            message = {"role": "assistant", "model": model, "content": [], "errorMessage": claude_error}
+        else:
+            message = {"role": "assistant", "model": model, "content": [{"type": "text", "text": f"From {model}."}],
+                       "usage": {"cost": {"total": 0.3}}}  # fmt: skip
+        out = events({"type": "session", "id": "sess-1"}, {"type": "message_end", "message": message})
+        return subprocess.CompletedProcess(cmd, 0, stdout=out, stderr="")
+
+    return run
+
+
+def which(cmd: list[str]) -> str:
+    return cmd[cmd.index("--provider") + 1] + "/" + cmd[cmd.index("--model") + 1]
+
+
+def test_the_backup_answers_while_claude_is_out_of_credit(workspace, monkeypatch):
+    calls = []
+    monkeypatch.setattr(runner.subprocess, "run", fake_prime_agent(calls, NO_CREDIT))
+    res = runner.ask("chat:1", "Explain page tables.", "s", "claude-opus-5-5", backup="openai-codex/gpt-6.1-sol")
+    assert [which(c) for c in calls] == ["anthropic/claude-opus-5-5", "openai-codex/gpt-6.1-sol"]
+    assert (res["text"], res["model"], res["cost"]) == ("From gpt-6.1-sol.", "gpt-6.1-sol", 0)  # the subscription pays
+    assert json.loads(Path(runner.THREADS_PATH).read_text()) == {"chat:1": "sess-1"}
+
+    # For a while, straight to the backup, in the same session; then Claude again.
+    runner.ask("chat:1", "And now?", "s", "claude-opus-5-5", backup="openai-codex/gpt-6.1-sol")
+    assert which(calls[2]) == "openai-codex/gpt-6.1-sol" and calls[2][calls[2].index("--resume") + 1] == "sess-1"
+    monkeypatch.setattr(runner, "_claude_out_until", clock.time() - 1)
+    runner.ask("chat:1", "And now?", "s", "claude-opus-5-5", backup="openai-codex/gpt-6.1-sol")
+    assert which(calls[3]) == "anthropic/claude-opus-5-5"
+
+
+def test_other_failures_and_no_backup_dont_switch_models(workspace, monkeypatch):
+    calls = []
+    monkeypatch.setattr(runner.subprocess, "run", fake_prime_agent(calls, "Overloaded"))
+    with pytest.raises(RuntimeError, match="Overloaded"):
+        runner.ask("t", "p", "s", "claude-opus-5-5", backup="openai-codex/gpt-6.1-sol")
+    monkeypatch.setattr(runner.subprocess, "run", fake_prime_agent(calls, NO_CREDIT))
+    with pytest.raises(RuntimeError, match="out of credit"):
+        runner.ask("t", "p", "s", "claude-opus-5-5")
+    assert [which(c) for c in calls] == ["anthropic/claude-opus-5-5"] * 2
+
+
+def test_without_a_claude_key_the_backup_answers(workspace, monkeypatch):
+    calls = []
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    monkeypatch.setattr(runner.subprocess, "run", fake_prime_agent(calls))
+    assert runner.ask("t", "p", "s", "claude-opus-5-5", backup="openai-codex/gpt-6.1-sol")["text"] == "From gpt-6.1-sol."
+    assert [which(c) for c in calls] == ["openai-codex/gpt-6.1-sol"]
+
+
+def test_a_backup_counts_once_it_is_signed_in():
+    healthy = {"ok": True, "prime_agent": True, "api_key": False, "logins": ["serper"]}
+    assert not usable(healthy, "openai-codex/gpt-6.1-sol") and "ANTHROPIC_API_KEY" in problem(healthy)
+    assert usable({**healthy, "logins": ["openai-codex", "serper"]}, "openai-codex/gpt-6.1-sol")
 
 
 def test_tools_validate_what_the_agent_saves(workspace):

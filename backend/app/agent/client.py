@@ -35,7 +35,7 @@ class AgentClient:
         return self.url is not None
 
     async def health(self) -> dict[str, Any]:
-        """{"ok", "prime_agent", "api_key", "busy"} from the runner, or {"ok": False, "error"}."""
+        """{"ok", "prime_agent", "api_key", "logins", "busy"} from the runner, or {"ok": False, "error"}."""
         if not self.url:
             return {"ok": False, "error": "No agent container: AGENT_URL isn't set."}
         try:
@@ -49,7 +49,7 @@ class AgentClient:
         if not self.url:
             raise AgentError("No agent container: AGENT_URL isn't set.")
         body = {"thread": thread, "prompt": prompt, "system": system, "model": self.config.model,
-                "thinking": self.config.thinking}  # fmt: skip
+                "thinking": self.config.thinking, "backup": self.config.backup}  # fmt: skip
         try:
             # A request queues behind any other the runner is working on, so allow for two.
             resp = await self.http.post(f"{self.url}/ask", json=body, timeout=httpx.Timeout(5, read=1900))
