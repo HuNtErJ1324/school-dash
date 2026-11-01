@@ -105,6 +105,11 @@ function Board({ canvas, initial, session }: { canvas: CanvasData; initial: Exca
   const excalidraw = useRef<ExcalidrawImperativeAPI | null>(null);
   const page = useRef(readState(canvas.state));
   const saver = useAutosave(canvas, page);
+  // The pen you're writing with, kept through Reset the canvas.
+  const pen = useRef<Pick<AppState, "currentItemStrokeColor" | "currentItemStrokeWidth">>({
+    currentItemStrokeColor: PEN,
+    currentItemStrokeWidth: 1,
+  });
   const [ready, setReady] = useState(false); // the scene is loaded
   const [convId, setConvId] = useState(canvas.conversation_id);
   const conv = useConversation(convId);
@@ -248,6 +253,18 @@ function Board({ canvas, initial, session }: { canvas: CanvasData; initial: Exca
               if (!ready) {
                 setReady(true);
                 excalidraw.current?.setActiveTool({ type: "freedraw" }); // it's for writing
+              }
+              // Reset the canvas puts back all of Excalidraw's defaults, its white page (another gray, inverted)
+              // and its pen among them. The page has no other way to change color, so this puts back ours, and the
+              // pen you had.
+              if (appState.viewBackgroundColor !== PAGE) {
+                excalidraw.current?.updateScene({
+                  appState: { viewBackgroundColor: PAGE, ...pen.current },
+                  captureUpdate: CaptureUpdateAction.NEVER,
+                });
+              } else {
+                const { currentItemStrokeColor, currentItemStrokeWidth } = appState;
+                pen.current = { currentItemStrokeColor, currentItemStrokeWidth };
               }
               saver.record(elements, appState, files);
             }}
