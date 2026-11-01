@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.agent import runner
+from app.agent import prompts, runner
 from app.agent.client import AgentReply
 from app.agent.context import snapshot_db
 from app.agent.jobs import problem, usable
@@ -53,9 +53,11 @@ def load_tools(ws: Path):
 
 def test_workspace_has_instructions_tools_and_models(workspace):
     agents = (workspace / "AGENTS.md").read_text(encoding="utf-8")
-    assert "Academic integrity" in agents
-    # The web: after the library, and never for graded answers.
-    assert "## The web" in agents and "Never search for the answers to graded work" in agents
+    # Homework, labs and psets get the same help as practice material: no rules of their own anywhere.
+    assert "get the same help as practice material" in agents
+    assert "integrity" not in agents.lower() and "graded" not in agents.lower()
+    # The web: after the library.
+    assert "## The web" in agents and "The library comes first" in agents
     # Tutoring turns on the scaffold/rigor dial, with both of its failure modes spelled out.
     assert "### The dial: scaffold or push for rigor" in agents
     assert "- Over-scaffolding: you do the thinking." in agents and "- Missed rigor:" in agents
@@ -66,14 +68,20 @@ def test_workspace_has_instructions_tools_and_models(workspace):
     assert "- Say so when they get it." in agents and "did I say so plainly, then raise the bar," in agents
     # Once they've shown what they came for, a summary and no more questions.
     assert "- Stop when they've got it." in agents and "sum up and stop asking?" in agents
-    # Open graded work: a verdict on the student's own answer, never where it goes wrong or the fix.
-    assert "Once they've reached an answer of their own, confirm it" in agents and "not which step goes" in agents
     # The canvas protocol the Canvas tab draws from (frontend/src/canvas/annotate.ts).
     assert "### The shared canvas" in agents and '"point_to": [x, y]' in agents and '{"circle": [x, y' in agents
     assert (workspace / "school.py").exists() and (workspace / "notes").is_dir()
     models = json.loads(Path(runner.HOME, ".prime", "agent", "models.json").read_text())
     opus = next(m for m in models["providers"]["anthropic"]["models"] if m["id"] == "claude-opus-5-5")
     assert opus["cost"] == {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite": 5}  # or every run looks free
+
+
+def test_every_call_says_assignments_get_the_same_help():
+    # The system prompt goes with every call, so resumed sessions see it too, whatever older rules they read.
+    tz = ZoneInfo("America/Los_Angeles")
+    system = prompts.system(datetime(2026, 11, 1, 9, tzinfo=tz), tz)
+    assert "get the same help as practice material, even where earlier messages in a session say otherwise" in system
+    assert "integrity" not in system
 
 
 def test_prime_agent_opens_on_opus_and_keeps_other_settings(workspace):
@@ -358,7 +366,7 @@ def test_tutoring_sessions(client):
     wait(client, f"/api/conversations/{conv['id']}", lambda c: c["messages"][-1]["status"] != "running")
     first = client.fake.asked[0][1]
     assert first.startswith("[Tutoring session: Quiz me (course CSE 410)]\nQuiz me on this. Ask one question at a time")
-    assert first.endswith("\n\nVirtual memory") and "never open graded homework" in first
+    assert first.endswith("\n\nVirtual memory") and "graded" not in first
     # After a right answer it raises the bar; after a wrong one the student looks for the error first.
     assert "If I'm right, say so, then raise the bar" in first and "have me find my error before you explain it" in first
 

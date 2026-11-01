@@ -95,7 +95,7 @@ else: no cookies, no `.env`. The dashboard asks it for three things:
   questions one at a time, with feedback) and Exam review (what it covers, a plan, practice on weak spots).
   Sessions are kept, so you can pick one up again later; math renders properly ($\LaTeX$). The camera
   button attaches photos of your handwritten work (up to four a message; on a phone it offers the camera),
-  and the agent looks at them and gives feedback on practice problems. Photos are stored upright, at most
+  and the agent looks at them and gives feedback on your work. Photos are stored upright, at most
   1600 px, without their metadata (no location), in `data/uploads/`.
 - **Working a problem by hand**, on the **Canvas** page (`/canvas`): an [Excalidraw](https://excalidraw.com)
   whiteboard you share with the tutor. Name the problem ("HW 3 problem 2") and it finds it in your course
@@ -134,20 +134,18 @@ rigor (why, a harder version, do it alone) when you're getting it right. It says
 right, and once you've shown you understand what you came for, it sums up the takeaway and stops asking.
 Explain sessions start from what you already know, quizzes get harder as you get them right, and exam reviews
 test you before explaining anything. In a session, **I'm stuck**, **Harder one** and **Let me try alone** tell it
-where you are in one tap. Briefs give a ready check and a work plan, never the problems broken into steps.
+where you are in one tap. Briefs give a ready check and a work plan.
 
-It's a reference and a planner, not a solver: its instructions follow the Allen School's "AI as
-a Reference Tool" policy, so it explains, plans and points to material, and
-won't write solutions or work assigned problems. On graded homework that's still open, it tells you
-whether an answer you reached yourself is right, but not where a wrong one goes wrong or how to fix it.
-Its citations (`doc:41#page=12`) open the document at that page. Each plan, brief and answer records
-what it cost, and `/api/agent` totals the month.
+Homework, labs, psets and other assignments get the same help as practice material: the tutor works
+through them with you, checks your answers and reasoning, and reviews and debugs your code. Its citations
+(`doc:41#page=12`) open the document at that page. Each plan, brief and answer records what it cost, and
+`/api/agent` totals the month.
 
 It can also search the web, for what the library doesn't cover (tool docs, error messages, background),
 if you give prime-agent a [Serper](https://serper.dev) key: run
 `docker compose exec -w /workspace agent /opt/prime-agent/bin/prime-agent`, type `/mcp`, choose
 **Serper (web search)** and paste the key, then `/quit`. The key stays in prime-agent's own settings in
-`data/agent-home/`. The course library comes first, and it never searches for answers to graded work.
+`data/agent-home/`. The course library comes first.
 
 **When the Claude credits run out**, a ChatGPT Plus/Pro subscription can stand in (`agent.backup`, GPT-6.1
 Sol unless you pick another). Sign in once on the server's own desktop, since ChatGPT's sign-in returns to

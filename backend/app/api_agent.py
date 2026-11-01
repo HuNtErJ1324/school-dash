@@ -141,7 +141,7 @@ class PhotoOut(BaseModel):
 
 @router.post("/uploads", response_model=PhotoOut, status_code=201)
 async def upload_photo(request: Request, file: Annotated[UploadFile, File()]) -> Any:
-    """A photo for a tutoring session: your work on a practice problem, a diagram."""
+    """A photo for a tutoring session: your work on a problem, a diagram."""
     content = await file.read(MAX_BYTES + 1)
     try:
         return (await asyncio.to_thread(save_photo, content, request.app.state.uploads_dir)).__dict__

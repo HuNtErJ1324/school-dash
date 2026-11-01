@@ -44,7 +44,7 @@ def dial_section() -> str:
     from app.agent.runner import AGENTS_MD
 
     start = AGENTS_MD.index("### The dial: scaffold or push for rigor")
-    end = AGENTS_MD.index("\n- Practice material", start)
+    end = AGENTS_MD.index("\n- Homework, labs", start)
     return AGENTS_MD[start:end].strip()
 
 

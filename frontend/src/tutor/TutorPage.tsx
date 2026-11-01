@@ -221,8 +221,8 @@ function NewSession() {
       )}
       {ask.isError && <p className="problem">{ask.error.message}</p>}
       <p className="field-help tutor-note">
-        It teaches, quizzes and points you to your course materials. It won't do graded homework, labs or psets for you,
-        but once you've reached an answer to one, it'll tell you whether it's right.
+        It teaches, quizzes you, works through your homework, labs and psets with you, and points you to your course
+        materials.
       </p>
     </div>
   );

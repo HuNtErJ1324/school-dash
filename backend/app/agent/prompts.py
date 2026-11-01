@@ -19,7 +19,8 @@ def system(now: datetime, tz: ZoneInfo) -> str:
     return (
         "You are the study planner and tutor in a UW student's personal school dashboard. Your workspace's "
         "AGENTS.md explains the data, the course library, the school.py helpers and the rules: read it at the "
-        "start of every new session and follow it, above all its academic-integrity rules. "
+        "start of every new session and follow it. Homework, labs, psets and other assignments get the same help "
+        "as practice material, even where earlier messages in a session say otherwise. "
         f"It is now {_when(now, tz)}, {now.astimezone(tz).year} ({tz.key} time)."
     )
 
@@ -140,14 +141,13 @@ def brief_prompt(item: ItemOut, tz: ZoneInfo, docs: Sequence[Document]) -> str:
                   "probably lives, and write what you can from the syllabus, calendar and lectures."]  # fmt: skip
     lines += [
         "",
-        "The brief helps me start and pace the work. It is not a solution. In markdown, with these sections:",
+        "The brief helps me start and pace the work. In markdown, with these sections:",
         "- **What it asks**: the deliverables and how they're graded and submitted, in a few bullets, in your words.",
         "- **Know first**: the concepts it relies on, each with where it's covered (doc links with pages).",
         "- **Ready check**: two or three quick questions I should be able to answer before starting (definitions, "
-        "a small case), each with where to read up if I can't. Not the assignment's own problems.",
+        "a small case), each with where to read up if I can't.",
         "- **Plan of attack**: three to seven ordered steps for doing the work (read, set up, attempt, check, "
-        "submit) with time estimates, ending at submission. The steps say what to do and where to look, never "
-        "how to solve it: don't break the problems themselves into steps. Say which parts usually take longest.",
+        "submit) with time estimates, ending at submission. Say which parts usually take longest.",
         "- **Watch out for**: requirements that are easy to miss and things to check before submitting.",
         "- **Ask about**: anything unclear in the spec that's worth asking in office hours or on Ed.",
         "",
@@ -167,12 +167,11 @@ MODES: dict[str, tuple[str, str | None]] = {
                 "yet, and once I've got a piece, say so and have me use it on my own before moving on. When I've "
                 "got what I asked about, sum up what I learned and stop."),
     "quiz": ("Quiz me", "Quiz me on this. Ask one question at a time, taken from or modeled on the course's own "
-             "practice material (lectures, readings, worked examples, review sheets, old exams; never open graded "
-             "homework), and wait for my answer. If I'm right, say so, then raise the bar: ask why, or give a "
-             "harder or less familiar variation. If I'm wrong, have me find my error before you explain it, and "
-             "give the smallest hint that gets me moving. Keep a running score. Once I've shown I know it "
-             "(several right, including a harder one), stop: give my score and anything to review, and offer more "
-             "if I want it."),
+             "material (lectures, readings, worked examples, homework, review sheets, old exams), and wait for my "
+             "answer. If I'm right, say so, then raise the bar: ask why, or give a harder or less familiar "
+             "variation. If I'm wrong, have me find my error before you explain it, and give the smallest hint "
+             "that gets me moving. Keep a running score. Once I've shown I know it (several right, including a "
+             "harder one), stop: give my score and anything to review, and offer more if I want it."),
     "review": ("Exam review", "Help me review for this. Find out what it covers (syllabus, review sheets, the "
                "course's pages in the library), then test me with a few quick questions across those topics "
                "before explaining anything, to see what I already know. From that, make a short study plan for "
