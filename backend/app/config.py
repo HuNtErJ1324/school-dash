@@ -106,14 +106,17 @@ class PlannerConfig(BaseModel):
 
 
 class VoiceConfig(BaseModel):
-    """Talking to the tutor, through the speech container (Speaches): Whisper hears you, Kokoro reads replies.
-    The models must be ones the container has downloaded (its PRELOAD_MODELS in docker-compose.yml)."""
+    """Talking to the tutor: Hex (when it's set up) or Whisper hears you, Kokoro reads replies. Whisper and Kokoro
+    run in the speech container (Speaches) and must be models it has downloaded (its PRELOAD_MODELS in
+    docker-compose.yml)."""
 
-    stt_model: str = "deepdml/faster-whisper-large-v3-turbo-ct2"
+    stt_model: str = "deepdml/faster-whisper-large-v3-turbo-ct2"  # "" for no Whisper
     tts_model: str = "speaches-ai/Kokoro-82M-v1.0-ONNX"
     voice: str = "af_heart"  # Kokoro's voices: af_heart, af_bella, am_michael, bf_emma, bm_george, ...
     speed: float = Field(1.0, ge=0.5, le=2.0)
     language: str = "en"  # what you speak; "" lets Whisper guess
+    # With Hex: the model it dictates with (`hex model list` marks it), so the GPU holds one copy.
+    hex_model: str = "parakeet_unified_en"
 
 
 class AppConfig(BaseModel):
@@ -144,6 +147,7 @@ class Settings(BaseModel):
     sync_on_start: bool = True
     agent_url: str | None = None  # the agent container's runner (docker compose sets http://agent:8790)
     speech_url: str | None = None  # the speech container (docker compose sets http://speech:8000)
+    hex_socket: Path | None = None  # the Hex relay's socket (docker compose sets /data/hex/relay.sock)
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -155,4 +159,5 @@ class Settings(BaseModel):
             sync_on_start=os.environ.get("SYNC_ON_START", "1").lower() not in ("0", "false", "no"),
             agent_url=os.environ.get("AGENT_URL") or None,
             speech_url=os.environ.get("SPEECH_URL") or None,
+            hex_socket=Path(os.environ["HEX_SOCKET"]) if os.environ.get("HEX_SOCKET") else None,
         )

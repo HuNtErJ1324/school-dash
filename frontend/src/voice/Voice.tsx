@@ -6,15 +6,16 @@ import { chatText } from "../canvas/reply";
 import { HeadphonesIcon, MicIcon, SpeakerIcon, StopIcon } from "../ui/icons";
 import { play, setReadAloud, stop, stopIf, unlock, usePlaying, useReadAloud } from "./player";
 import { canRecord, MAX_SECONDS, micProblem, record, type Recording } from "./record";
+import { toWav } from "./wav";
 
-/** What the speech container can do. Asked once a page, and again every few minutes. */
+/** Whether dictation and reading aloud work. Asked once a page, and again every few minutes. */
 export function useVoice() {
   return useQuery({ queryKey: ["voice"], queryFn: api.voice, staleTime: 5 * 60_000, refetchInterval: 5 * 60_000 });
 }
 
 const browserVoice = () => "speechSynthesis" in window;
 
-/** Which voice buttons a reply box gets: the mic once the speech container takes dictation, and reading aloud. */
+/** Which voice buttons a reply box gets: the mic once Hex or Whisper takes dictation, and reading aloud. */
 export function useVoiceTools(): { mic: boolean; readAloud: boolean } {
   const voice = useVoice();
   return { mic: !!voice.data?.stt && canRecord(), readAloud: !!voice.data?.tts || browserVoice() };
@@ -23,7 +24,7 @@ export function useVoiceTools(): { mic: boolean; readAloud: boolean } {
 type MicState = "idle" | "starting" | "recording" | "hearing";
 
 /**
- * Tap to talk, tap again when you're done: what you said goes in the reply box, for you to check (Whisper hears
+ * Tap to talk, tap again when you're done: what you said goes in the reply box, for you to check (it hears
  * "x squared", not $x^2$) and send. Stops any reading aloud first, so the tutor doesn't hear itself.
  */
 export function MicButton({ onText, onProblem, context }: {
@@ -54,7 +55,7 @@ export function MicButton({ onText, onProblem, context }: {
     recording.current = null;
     setState("hearing");
     try {
-      const { text } = await api.transcribe(await r.stop(), context);
+      const { text } = await api.transcribe(await toWav(await r.stop()), context);
       if (text) onText(text);
       else onProblem("I didn't catch anything. Try again a little closer to the microphone?");
     } catch (e) {

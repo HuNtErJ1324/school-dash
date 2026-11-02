@@ -117,9 +117,9 @@ interface Attaching {
  * The question box. Enter sends, Shift+Enter starts a new line. `done` clears it once sent.
  * With `photos`, a camera button attaches up to four photos (on a phone it offers the camera);
  * each uploads as soon as it's picked, and a message can be just photos (sent as `photoOnlyText`).
- * `tools` are more buttons, stacked above it. Once the speech container is set up, a mic button beside Send puts
- * what you say in the box (`voiceContext`, what the conversation is about, helps it spell the course's terms), and
- * another reads replies aloud as they arrive.
+ * `tools` are more buttons, stacked above it. Once dictation is set up (Hex or Whisper), a mic button beside Send
+ * puts what you say in the box (`voiceContext`, what the conversation is about, helps Whisper spell the course's
+ * terms), and another reads replies aloud as they arrive.
  */
 export function Composer({
   onSend,

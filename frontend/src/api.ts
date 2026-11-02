@@ -158,7 +158,7 @@ export interface AgentStatus {
   spent_this_month: number;
 }
 
-/** What the speech container can do: take dictation (stt) and read replies in its voice (tts). */
+/** What voice can do now: take dictation (stt, Hex or Whisper) and read replies in Kokoro's voice (tts). */
 export interface VoiceStatus {
   stt: boolean;
   tts: boolean; // otherwise the browser's own voice reads them
@@ -430,7 +430,11 @@ export const api = {
   /** What was said in a recording. `context` (the course, the topic) helps it spell the course's terms. */
   transcribe: (audio: Blob, context = "") => {
     const form = new FormData();
-    const ext = audio.type.includes("mp4") ? "m4a" : audio.type.includes("ogg") ? "ogg" : "webm";
+    const ext =
+      audio.type.includes("wav") ? "wav"
+      : audio.type.includes("mp4") ? "m4a"
+      : audio.type.includes("ogg") ? "ogg"
+      : "webm"; // prettier-ignore
     form.set("file", audio, `speech.${ext}`);
     form.set("context", context.slice(0, 500));
     return request<{ text: string }>("POST", "/api/voice/transcribe", { body: form });

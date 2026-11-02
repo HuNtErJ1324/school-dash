@@ -33,7 +33,7 @@ from .scheduler import Scheduler
 from .sources import build_sources
 from .sources.base import SourceContext
 from .sync import run_source
-from .voice import SpeechClient
+from .voice import HexClient, SpeechClient
 
 USER_AGENT = "school-dashboard/0.1 (personal, self-hosted)"
 mimetypes.add_type("font/woff2", ".woff2")  # the Canvas tab's fonts; slim images and Windows don't know it
@@ -79,7 +79,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         for p in problems:
             logging.getLogger(__name__).warning("source %s not started: %s", p.name, p.error)
 
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as http:
+        hex_socket = settings.hex_socket
+        async with (
+            httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as http,
+            httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(uds=str(hex_socket)) if hex_socket else None) as hex_http,
+        ):
             ctx = SourceContext(tz=ZoneInfo(config.timezone), http=http)
             scheduler = Scheduler(sources, lambda source: run_source(source, ctx, Session, live))
             canvas = next((s.config for s in sources if s.type == "canvas"), None)
@@ -97,7 +101,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.library = library
             app.state.library_sync = library_sync
             app.state.assistant = assistant
-            app.state.speech = SpeechClient(settings.speech_url, config.voice, http)
+            hex_client = HexClient(hex_socket, config.voice, hex_http) if hex_socket else None
+            app.state.speech = SpeechClient(settings.speech_url, config.voice, http, hex_client)
             app.state.background = set()
             app.state.uploads_dir = settings.data_dir / "uploads"
             app.state.canvases_dir = settings.data_dir / "canvases"

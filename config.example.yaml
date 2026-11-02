@@ -54,14 +54,16 @@ planner:
   brief_days: 10 # each morning, write briefs for assignments and exams due within this many days
   max_briefs: 4 # ...at most this many a morning
 
-# Talking to the tutor, through the speech container (docker-compose.yml): Whisper writes down what you say,
-# Kokoro reads replies aloud. The models must be ones the container downloads (its PRELOAD_MODELS).
+# Talking to the tutor: Hex (when docker-compose.yml's `hex` service is on) or Whisper writes down what you say,
+# Kokoro reads replies aloud. Whisper and Kokoro run in the speech container and must be models it downloads (its
+# PRELOAD_MODELS).
 voice:
-  stt_model: deepdml/faster-whisper-large-v3-turbo-ct2
+  stt_model: deepdml/faster-whisper-large-v3-turbo-ct2 # "" for none (with Hex, then nothing does while it's off)
   tts_model: speaches-ai/Kokoro-82M-v1.0-ONNX
   voice: af_heart # or af_bella, af_nicole, am_michael, am_fenrir, bf_emma, bm_george, ...
   speed: 1.0 # 0.5 to 2
   language: en # what you speak; "" lets Whisper guess
+  hex_model: parakeet_unified_en # the model Hex dictates with (`hex model list`), so the GPU holds one copy
 
 # Course documents the agent reads. Every course's `links.site` above is read (its pages, the
 # PDFs they link, shared Google slides); list more sites here. With the canvas source set up,

@@ -1,5 +1,5 @@
-"""Voice for tutoring: what you say becomes text in the reply box, and replies can be read aloud. Both go
-through the speech container (voice.py); recordings and audio aren't kept."""
+"""Voice for tutoring: what you say becomes text in the reply box (Hex or Whisper writes it down), and replies can
+be read aloud (Kokoro, in the speech container). See voice.py; recordings and audio aren't kept."""
 
 from __future__ import annotations
 
@@ -44,7 +44,8 @@ async def transcribe(
         raise HTTPException(413, "That recording is too long. Keep it under a couple of minutes.")
     if not audio:
         raise HTTPException(422, "The recording is empty.")
-    # The course names and the topic, so Whisper spells "semaphore" and "Riemann" the way the course does.
+    # The course names and the topic, so Whisper spells "semaphore" and "Riemann" the way the course does (Hex
+    # takes no prompt).
     courses = ", ".join(f"{c.code} {c.name}" if c.name else c.code for c in request.app.state.config.courses)
     prompt = ". ".join(p for p in (courses, context.strip()) if p)
     try:

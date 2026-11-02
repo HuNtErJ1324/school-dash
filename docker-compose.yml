@@ -34,6 +34,7 @@ services:
       TZ: America/Los_Angeles
       AGENT_URL: http://agent:8790
       SPEECH_URL: http://speech:8000
+      HEX_SOCKET: /data/hex/relay.sock # the `hex` service makes it, when it's on
     expose: ["8000"]
     volumes:
       - ./config.yaml:/config/config.yaml:ro
@@ -66,11 +67,11 @@ services:
       - ${PRIME_AGENT_DIR:-./prime-agent}:/opt/prime-agent:ro # prime-agent's install folder (set in .env)
     restart: unless-stopped
 
-  # Voice for tutoring: Speaches, an OpenAI-style speech server, with Whisper (what you say) and Kokoro (reading
-  # replies) on the GPU. Only the app talks to it, and it keeps no audio. The models download on the first start
-  # (about 2 GB, into the speech-models volume) and stay loaded; together they fit on a 4 GB card.
-  # Needs the NVIDIA driver and Container Toolkit on the host (README). Without a GPU, use the 0.9.0-rc.3-cpu image
-  # and delete `deploy`; or delete this service, and replies are read in the browser's own voice.
+  # Voice for tutoring: Speaches, an OpenAI-style speech server, with Whisper (what you say, when Hex isn't writing
+  # it down) and Kokoro (reading replies) on the GPU. Only the app talks to it, and it keeps no audio. The models
+  # download on the first start (about 2 GB, into the speech-models volume) and stay loaded; together they fit on a
+  # 4 GB card. Needs the NVIDIA driver and Container Toolkit on the host (README). Without a GPU, use the
+  # 0.9.0-rc.3-cpu image and delete `deploy`; or delete this service, and replies are read in the browser's own voice.
   speech:
     # 0.9 or newer: latest-cuda is still 0.8.3, which ignores PRELOAD_MODELS and the *_MODEL_TTLs below
     image: ghcr.io/speaches-ai/speaches:0.9.0-rc.3-cuda
@@ -94,6 +95,28 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    restart: unless-stopped
+
+  # Dictation through Hex (github.com/anomalyco/hex), if it runs on this server's desktop: it's faster than Whisper,
+  # and it uses the model Hex dictates with. COMPOSE_PROFILES=hex in .env turns this on; create data/hex first.
+  # Hex listens only on the server's own 127.0.0.1, so this relay runs on the host's network, and the app reaches it
+  # through a socket in data/hex. It passes on transcription and nothing else of Hex's (app/hex_relay.py). Hex runs
+  # while you're logged in to the desktop; the rest of the time, Whisper writes down what you say.
+  hex:
+    build: .
+    profiles: [hex]
+    user: "${PUID:-1000}:${PGID:-1000}"
+    command: ["python", "-m", "app.hex_relay"]
+    init: true
+    network_mode: host
+    environment:
+      HEX_DIR: /hex
+      HEX_SOCKET: /run/hex/relay.sock
+    # Both folders must exist (run Hex once first), so Docker doesn't make them, as root.
+    volumes:
+      # Hex's folder: its local-api.json says where Hex listens now
+      - {type: bind, source: "${HEX_DIR:-~/.local/share/hex}", target: /hex, read_only: true, bind: {create_host_path: false}}
+      - {type: bind, source: ./data/hex, target: /run/hex, bind: {create_host_path: false}}
     restart: unless-stopped
 
 volumes:
