@@ -60,6 +60,10 @@ class SourceError(Exception):
     """A failure whose message is safe and useful to show in the dashboard as-is."""
 
 
+class LoginError(SourceError):
+    """The source turned the login away (an expired session cookie, usually): a fresh one fixes it."""
+
+
 @dataclass
 class SourceContext:
     tz: ZoneInfo
@@ -83,6 +87,10 @@ class Source[C: BaseModel](ABC):
 
     @abstractmethod
     async def fetch(self, ctx: SourceContext) -> FetchResult: ...
+
+    async def check_login(self, ctx: SourceContext) -> None:
+        """One read-only request with the login, raising LoginError if it's turned away. For sources that log in."""
+        raise NotImplementedError
 
 
 REGISTRY: dict[str, type[Source[Any]]] = {}

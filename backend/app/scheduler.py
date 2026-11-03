@@ -19,12 +19,24 @@ class Scheduler:
         self._run = run
         self._locks = {name: asyncio.Lock() for name in self.sources}
         self._tasks: list[asyncio.Task[None]] = []
+        self._started = False
         self.next_run_at: dict[str, datetime] = {}
 
     def start(self, stagger_seconds: float = 2.0) -> None:
+        self._started = True
         for i, source in enumerate(self.sources.values()):
-            task = asyncio.create_task(self._loop(source, i * stagger_seconds), name=f"sync:{source.name}")
-            self._tasks.append(task)
+            self._start_loop(source, i * stagger_seconds)
+
+    def add(self, source: Source) -> None:
+        """A source that couldn't start with the others (it had no login yet). Runs on its interval from now on."""
+        self.sources[source.name] = source
+        self._locks.setdefault(source.name, asyncio.Lock())
+        if self._started:
+            self.next_run_at[source.name] = datetime.now(timezone.utc) + source.interval
+            self._start_loop(source, source.interval.total_seconds())  # whoever added it syncs it now
+
+    def _start_loop(self, source: Source, delay: float) -> None:
+        self._tasks.append(asyncio.create_task(self._loop(source, delay), name=f"sync:{source.name}"))
 
     async def stop(self) -> None:
         for task in self._tasks:
@@ -35,9 +47,11 @@ class Scheduler:
     def is_running(self, name: str) -> bool:
         return self._locks[name].locked()
 
-    async def run_now(self, name: str) -> None:
+    async def run_now(self, name: str, again: bool = False) -> None:
+        """Sync a source now. If it's already syncing, wait for that run, and with `again` (it started before a change
+        that matters, like a new cookie) sync once more after it."""
         lock = self._locks[name]
-        if lock.locked():  # already syncing: wait for that run rather than starting another
+        if lock.locked() and not again:  # wait for that run rather than starting another
             async with lock:
                 return
         async with lock:

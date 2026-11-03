@@ -503,6 +503,69 @@ a {
   color: var(--love);
 }
 
+.source-login {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--subtle);
+}
+
+/* A login that stopped working, on every page until a fresh cookie is in: the box to paste it is right there. */
+.login-notice {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--love);
+  background: var(--bg-raised);
+  font-size: 0.875rem;
+}
+
+.login-notice > p {
+  margin: 0;
+}
+
+.login-notice.fixed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  border-left-color: var(--pine);
+}
+
+.login-notice.fixed span {
+  flex: 1 1 280px;
+}
+
+.cookie-form {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  max-width: 720px;
+}
+
+.cookie-form textarea {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.8125rem;
+  resize: vertical;
+}
+
+.cookie-form .field-help {
+  margin: 0;
+}
+
+.cookie-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
 /* ---- Board ------------------------------------------------------------- */
 
 .board {

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Iterator
 from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
@@ -12,9 +12,12 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from . import quarters
+from .cookies import parse_cookie
 from .dedupe import regroup, same_work
 from .grades import CourseGrades, course_grades
 from .models import Board, Course, Item, Overlay, SyncRun
+from .sources import build_source, configured_cookie, login_site
+from .sources.base import LoginError, SourceError
 from .views import CourseOut, ItemOut, live_items, merged_items
 
 router = APIRouter(prefix="/api")
@@ -62,6 +65,17 @@ class RunOut(BaseModel):
     ok: bool
     error: str | None
     items_seen: int
+    needs_login: bool
+
+
+class CookieStatus(BaseModel):
+    """A source that logs in with your browser session's cookie. The cookie itself is never sent."""
+
+    origin: Literal["pasted", "config"] | None  # pasted into the dashboard, or from .env; None when there's none
+    site: str | None  # where to copy one from: "canvas.uw.edu"
+    saved_at: datetime | None  # when it was pasted
+    checked_at: datetime | None  # the login's last try: when it was pasted, or a sync that got in or was turned away
+    check_ok: bool | None
 
 
 class SourceStatus(BaseModel):
@@ -73,6 +87,7 @@ class SourceStatus(BaseModel):
     last_run: RunOut | None
     last_success_at: datetime | None
     config_error: str | None = None
+    cookie: CookieStatus | None = None  # for sources that log in with a cookie
 
 
 def _utc(dt: datetime) -> datetime:
@@ -286,7 +301,36 @@ def _statuses(request: Request, s: Session) -> list[SourceStatus]:
         )  # fmt: skip
         for p in request.app.state.problems
     ]
+    for status in out:
+        if status.name in request.app.state.logins:
+            status.cookie = _cookie_status(request, s, status.name)
     return out
+
+
+def _cookie_status(request: Request, s: Session, name: str) -> CookieStatus:
+    state = request.app.state
+    saved = state.cookies.get(name)
+    source = state.scheduler.sources.get(name)
+    if saved:
+        origin = "pasted"
+    elif source is not None:
+        origin = "config" if source.config.cookie else None
+    else:
+        origin = None if any(p.name == name and p.needs_login for p in state.problems) else "config"
+    # The login's last try: when it was pasted, or the latest run that got in or was turned away (one that started
+    # before the paste tried the old cookie). The library reads Canvas with the canvas source's login, so it counts.
+    names = [name, "library:canvas"] if source is not None and state.library_sync.canvas is source.config else [name]
+    last = s.scalars(
+        select(SyncRun).where(SyncRun.source.in_(names), or_(SyncRun.ok, SyncRun.needs_login))
+        .order_by(SyncRun.id.desc()).limit(1)
+    ).first()  # fmt: skip
+    checked_at, ok = (saved.saved_at, True) if saved else (None, None)
+    if last and (checked_at is None or _utc(last.started_at) >= checked_at):
+        checked_at, ok = _utc(last.finished_at), last.ok
+    return CookieStatus(
+        origin=origin, site=login_site(state.logins[name], name), saved_at=saved.saved_at if saved else None,
+        checked_at=checked_at, check_ok=ok,
+    )  # fmt: skip
 
 
 @router.get("/sources", response_model=list[SourceStatus])
@@ -301,6 +345,55 @@ async def sync_source(name: str, request: Request) -> Any:
         raise HTTPException(404, f"no runnable source named {name!r}")
     await scheduler.run_now(name)
     with request.app.state.Session() as s:
+        return next(st for st in _statuses(request, s) if st.name == name)
+
+
+class CookieIn(BaseModel):
+    # What you copied: the Cookie header, the whole header line, or Copy as cURL. Checked by hand rather than with
+    # Field limits, because pydantic's errors quote the value they turn down.
+    cookie: str
+
+
+@router.put("/sources/{name}/cookie", response_model=SourceStatus)
+async def put_cookie(name: str, body: CookieIn, request: Request) -> Any:
+    """A fresh session cookie for a source: checked with one read-only request, kept, and synced with right away."""
+    # The dashboard has no login, so anyone on the tailnet can call this, but a web page you visit can't: browsers
+    # say where a request comes from. And a cookie is only kept once the site has let it in.
+    if request.headers.get("sec-fetch-site", "same-origin") not in ("same-origin", "none"):
+        raise HTTPException(403, "cookies can only be pasted into the dashboard itself")
+    state = request.app.state
+    sc = state.logins.get(name)
+    if sc is None:
+        raise HTTPException(404, f"no source named {name!r} logs in with a cookie")
+    try:
+        cookie = parse_cookie(body.cookie)
+        candidate = build_source(sc, name, cookie)
+    except ValueError as e:  # neither message quotes the cookie
+        raise HTTPException(422, str(e)) from None
+    try:
+        await candidate.check_login(state.source_ctx)
+    except LoginError:
+        site = login_site(sc, name) or name
+        raise HTTPException(422, f"{site} didn't take that cookie. Copy a fresh one from a tab where you're logged in.") from None
+    except SourceError as e:
+        raise HTTPException(502, f"couldn't check the cookie: {e}") from None
+    state.cookies.save(name, cookie, configured_cookie(sc), datetime.now(timezone.utc))
+
+    scheduler, library = state.scheduler, state.library_sync
+    if (source := scheduler.sources.get(name)) is not None:
+        source.config.cookie = cookie  # the library reads Canvas with this same config, so it switches too
+    else:  # it couldn't start without a cookie
+        source = candidate
+        scheduler.add(source)
+        state.problems = [p for p in state.problems if p.name != name]
+        if source.type == "canvas":
+            library.use_canvas(source.config)
+    await scheduler.run_now(name, again=True)
+    if library.canvas is source.config:
+        task = asyncio.create_task(library.run_now(again=True))
+        state.background.add(task)
+        task.add_done_callback(state.background.discard)
+    with state.Session() as s:
         return next(st for st in _statuses(request, s) if st.name == name)
 
 

@@ -24,13 +24,14 @@ from .api_canvas import sessions as session_canvas_router
 from .api_library import router as library_router
 from .api_voice import router as voice_router
 from .config import Settings, load_config
+from .cookies import CookieStore
 from .courses import sync_config_courses
 from .db import make_engine, make_sessionmaker
 from .dedupe import regroup
 from .library import Library, LibrarySync, term_canvas_courses
 from .migrate import upgrade
 from .scheduler import Scheduler
-from .sources import build_sources
+from .sources import build_sources, cookie_logins
 from .sources.base import SourceContext
 from .sync import run_source
 from .voice import HexClient, SpeechClient
@@ -71,7 +72,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine = make_engine(settings.data_dir / "dashboard.db")
         upgrade(engine)
         Session = make_sessionmaker(engine)
-        sources, problems = build_sources(config.sources)
+        cookies = CookieStore(settings.data_dir / "cookies.json")
+        sources, problems = build_sources(config.sources, cookies.pasted)
         live = [s.name for s in sources] + [p.name for p in problems]
         sync_config_courses(Session, config.courses, live)
         with Session.begin() as s:
@@ -98,6 +100,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.Session = Session
             app.state.scheduler = scheduler
             app.state.problems = problems
+            app.state.source_ctx = ctx
+            app.state.cookies = cookies
+            app.state.logins = cookie_logins(config.sources)
             app.state.library = library
             app.state.library_sync = library_sync
             app.state.assistant = assistant

@@ -50,6 +50,7 @@ class RunOut(BaseModel):
     unchanged: int
     removed: int
     skipped: list[str]
+    needs_login: bool  # Canvas turned the login away: a fresh cookie fixes it
 
 
 class LibraryOut(BaseModel):

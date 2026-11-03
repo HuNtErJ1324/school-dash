@@ -244,3 +244,4 @@ class SyncRun(Base):
     ok: Mapped[bool]
     error: Mapped[str | None]
     items_seen: Mapped[int] = mapped_column(default=0)
+    needs_login: Mapped[bool] = mapped_column(default=False)  # the login was turned away: a fresh cookie fixes it

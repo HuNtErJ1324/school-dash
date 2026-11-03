@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from .courses import CourseResolver, assign_colors
 from .dedupe import regroup
 from .models import Item, SyncRun
-from .sources.base import FetchResult, Source, SourceContext, SourceError
+from .sources.base import FetchResult, LoginError, Source, SourceContext, SourceError
 
 log = logging.getLogger(__name__)
 
@@ -22,19 +22,19 @@ async def run_source(
     source: Source, ctx: SourceContext, Session: sessionmaker[Session], live_sources: list[str] | None = None
 ) -> SyncRun:
     started = ctx.now()
-    seen, error = 0, None
+    seen, error, needs_login = 0, None, False
     try:
         result = await source.fetch(ctx)
         seen = await asyncio.to_thread(store_result, Session, source.name, result, started, live_sources)
     except SourceError as e:
-        error = str(e)
+        error, needs_login = str(e), isinstance(e, LoginError)
     except Exception as e:  # a broken adapter shouldn't take the scheduler down with it
         log.exception("source %s failed", source.name)
         error = f"{type(e).__name__}: {e}"
 
     run = SyncRun(
         source=source.name, started_at=started, finished_at=ctx.now(),
-        ok=error is None, error=error, items_seen=seen,
+        ok=error is None, error=error, items_seen=seen, needs_login=needs_login,
     )  # fmt: skip
     await asyncio.to_thread(_save, Session, run)
     secs = (run.finished_at - started).total_seconds()

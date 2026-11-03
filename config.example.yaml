@@ -94,7 +94,8 @@ sources:
   # Gradescope: scores, submission status and exact due times, merged with the same
   # assignments from Canvas and course calendars. UW's Gradescope login is NetID-only,
   # so this reads your browser session: the Cookie header from a logged-in
-  # gradescope.com tab, kept in .env. Paste a fresh one when it stops syncing.
+  # gradescope.com tab, from .env or pasted into the dashboard, which asks for a fresh one
+  # when it stops syncing.
   # `course_map` fixes courses whose Gradescope short name isn't a course code.
   - type: gradescope
     cookie: ${GRADESCOPE_COOKIE}

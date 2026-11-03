@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { api, type SourceStatus } from "./api";
 import { useNow, useSources, useTimezone } from "./hooks";
+import { CookieLine } from "./Logins";
 import { useQuarter } from "./quarter";
 import { Link } from "./router";
 import { ago, longDate } from "./time";
@@ -128,6 +129,7 @@ function SyncStatus({ now }: { now: number }) {
             <li key={s.name} className={failing(s) ? "source problem" : "source"}>
               <span className="source-name">{s.name}</span>
               <span className="source-state">{describe(s, now)}</span>
+              <CookieLine source={s} now={now} />
             </li>
           ))}
         </ul>

@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from ..coursecode import parse_course_code
 from ..quarters import code_from_term
-from .base import CourseRef, FetchResult, ItemIn, Source, SourceContext, SourceError, Status, register
+from .base import CourseRef, FetchResult, ItemIn, LoginError, Source, SourceContext, SourceError, Status, register
 from .classify import kind_from_title
 from .ics import slug
 
@@ -65,9 +65,7 @@ class GradescopeSource(Source[GradescopeConfig]):
 
     async def fetch(self, ctx: SourceContext) -> FetchResult:
         cfg = self.config
-        courses = parse_courses(await self._get(ctx, "/account"), all_terms=cfg.all_terms)
-        if courses is None:
-            raise SourceError("Gradescope didn't show your courses; the session has probably expired. Paste a fresh cookie into .env")
+        courses = await self._courses(ctx)
 
         items: list[ItemIn] = []
         refs: list[CourseRef] = []
@@ -86,6 +84,15 @@ class GradescopeSource(Source[GradescopeConfig]):
         # Course pages list every assignment, so no window: anything gone from them is gone.
         return FetchResult(items=items, courses=refs)
 
+    async def check_login(self, ctx: SourceContext) -> None:
+        await self._courses(ctx)
+
+    async def _courses(self, ctx: SourceContext) -> list[GsCourse]:
+        courses = parse_courses(await self._get(ctx, "/account"), all_terms=self.config.all_terms)
+        if courses is None:
+            raise LoginError("Gradescope didn't show your courses; the session has probably expired. Paste a fresh cookie")
+        return courses
+
     async def _get(self, ctx: SourceContext, path: str) -> str:
         try:
             resp = await ctx.http.get(
@@ -96,7 +103,7 @@ class GradescopeSource(Source[GradescopeConfig]):
         except httpx.HTTPError as e:
             raise SourceError(f"couldn't reach Gradescope ({type(e).__name__})") from e
         if resp.status_code in (401, 403) or resp.is_redirect:
-            raise SourceError("Gradescope rejected the session; paste a fresh cookie into .env")
+            raise LoginError("Gradescope rejected the session; paste a fresh cookie")
         if resp.status_code != 200:
             raise SourceError(f"Gradescope {path} returned HTTP {resp.status_code}")
         return resp.text

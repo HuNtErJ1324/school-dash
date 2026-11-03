@@ -89,6 +89,16 @@ export interface SyncRun {
   ok: boolean;
   error: string | null;
   items_seen: number;
+  needs_login: boolean; // the login was turned away: a fresh cookie fixes it
+}
+
+/** A source that logs in with your browser session's cookie. The cookie itself never comes back. */
+export interface CookieStatus {
+  origin: "pasted" | "config" | null; // pasted into the dashboard, or from .env; null when there's none
+  site: string | null; // where to copy one from: "canvas.uw.edu"
+  saved_at: string | null; // when it was pasted
+  checked_at: string | null; // the login's last try: when it was pasted, or a sync
+  check_ok: boolean | null;
 }
 
 export interface SourceStatus {
@@ -100,6 +110,7 @@ export interface SourceStatus {
   last_run: SyncRun | null;
   last_success_at: string | null;
   config_error: string | null;
+  cookie: CookieStatus | null; // for sources that log in with a cookie
 }
 
 export interface Meta {
@@ -301,6 +312,7 @@ export interface LibraryRun {
   unchanged: number;
   removed: number;
   skipped: string[];
+  needs_login: boolean;
 }
 
 export interface Library {
@@ -392,6 +404,9 @@ export const api = {
     request<CourseGrades[]>("GET", "/api/grades", { params: new URLSearchParams(quarter ? { quarter } : {}) }),
   sources: () => request<SourceStatus[]>("GET", "/api/sources"),
   syncAll: () => request<SourceStatus[]>("POST", "/api/sync"),
+  /** Checks a pasted cookie with one read-only request, keeps it, and syncs that source with it. */
+  saveCookie: (name: string, cookie: string) =>
+    request<SourceStatus>("PUT", `/api/sources/${name}/cookie`, { body: { cookie } }),
   /** null when nothing has been saved yet. */
   board: async (name: string): Promise<SavedBoard | null> => {
     try {

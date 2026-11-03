@@ -230,8 +230,8 @@ After editing `config.yaml`, run `docker compose restart app`. After changing `.
 your tailnet, it can't reach the dashboard. In the admin console, turn off key expiry for
 the `school` machine, or it drops off your tailnet after 180 days.
 
-Everything the dashboard keeps is in `data/`: the database (`dashboard.db`), the library, and
-the agent's home and workspace. That's the folder to back up.
+Everything the dashboard keeps is in `data/`: the database (`dashboard.db`), the library, pasted
+session cookies (`cookies.json`), and the agent's home and workspace. That's the folder to back up.
 
 ## Where the data comes from
 
@@ -248,11 +248,20 @@ The sync status in the header shows each source's last run and any error.
 
 ### Getting a session cookie (Gradescope, Canvas API)
 
-Open the site logged in, then open DevTools → Network and reload. Click the request for the page
-itself (`www.gradescope.com`), find **Request Headers → cookie**, copy its whole value, and paste it
-into `.env` (`GRADESCOPE_COOKIE=...`). It's as powerful as your login, so keep `.env` private. The
-dashboard only reads pages with it. When the session expires, the header says the source isn't
-syncing; paste a fresh one and run `docker compose restart app`.
+Sessions expire (Canvas's after a few days). When one does, a notice at the top of the dashboard says
+so, with a box to paste a fresh cookie; the header's source list has the same box for each source at
+any time. Open the site logged in, press F12, open **Network** and reload, then right-click the
+request for the page itself (`www.gradescope.com`) → **Copy → Copy as cURL**, and paste that. The
+request's **Request Headers → cookie** value works too, alone or as the whole `Cookie:` line.
+
+The dashboard checks it with one request to the site, keeps it in `data/cookies.json` (readable only
+by the app's user, and not in the database the agent gets a copy of), and syncs with it right away,
+Canvas's documents too. It never shows a cookie back. A cookie is as powerful as your login; the
+dashboard only reads pages with it. Anyone on your tailnet can paste one, since the dashboard has no
+login of its own, but nobody can read one out.
+
+`.env` works too (`GRADESCOPE_COOKIE=...`, `CANVAS_COOKIE=...`, then `docker compose up -d`). A
+pasted cookie wins over the one in `.env` until that one changes; then the newer `.env` one wins.
 
 ## The same assignment from several sites
 

@@ -3,6 +3,7 @@ import { lazy, Suspense, useState } from "react";
 
 import { Board } from "./board/Board";
 import { Header, type Page } from "./Header";
+import { LoginNotice } from "./Logins";
 import { QuarterProvider, useQuarter } from "./quarter";
 import { usePath } from "./router";
 import { TutorPage } from "./tutor/TutorPage";
@@ -23,6 +24,7 @@ export function App() {
       <QuarterProvider>
         <Header page={page} editing={editing} onToggleEditing={() => setEditing(!editing)} />
         <QuarterNotice />
+        <LoginNotice />
         {tutor ? (
           <TutorPage conversationId={tutor[1] ? Number(tutor[1]) : null} canvas={Boolean(tutor[1] && tutor[2])} />
         ) : canvas ? (

@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from ..config import AppConfig, SiteConfig
 from ..coursecode import course_slug, parse_course_code
 from ..models import Course, Item, SyncRun
-from ..sources.base import SourceError
+from ..sources.base import LoginError, SourceError
 from ..sources.canvas import CanvasApi, CanvasConfig
 from .canvas_docs import fetch_canvas
 from .site import crawl_site
@@ -35,6 +35,7 @@ class LibraryRun:
     unchanged: int = 0
     removed: int = 0
     skipped: list[str] = field(default_factory=list)  # files it couldn't read, and why
+    needs_login: bool = False  # Canvas turned the login away: a fresh cookie fixes it
 
 
 class LibrarySync:
@@ -85,8 +86,14 @@ class LibrarySync:
             self._task.cancel()
             await asyncio.gather(self._task, return_exceptions=True)
 
-    async def run_now(self) -> list[LibraryRun]:
-        if self._lock.locked():  # already reading: wait for it rather than starting another
+    def use_canvas(self, canvas: CanvasConfig) -> None:
+        """The canvas source's login, when that source starts after the library did (its cookie was just pasted)."""
+        if self.config.library.canvas and self.canvas is None:
+            self.canvas = canvas
+
+    async def run_now(self, again: bool = False) -> list[LibraryRun]:
+        """Read everything now. If a read is already going, wait for it, and with `again` read once more after it."""
+        if self._lock.locked() and not again:  # wait for it rather than starting another
             async with self._lock:
                 return list(self.runs.values())
         async with self._lock:
@@ -121,14 +128,15 @@ class LibrarySync:
             # Only a complete read can say what's gone, and only for the courses it read.
             run.removed = await asyncio.to_thread(self.library.mark_removed, source, seen, course_ids, datetime.now(timezone.utc))
         except SourceError as e:
-            run.error = str(e)
+            run.error, run.needs_login = str(e), isinstance(e, LoginError)
         except Exception as e:
             log.exception("library %s failed", name)
             run.error = f"{type(e).__name__}: {e}"
         run.finished_at = datetime.now(timezone.utc)
         with self.Session.begin() as s:
             s.add(SyncRun(source=f"library:{name}", started_at=run.started_at, finished_at=run.finished_at,
-                          ok=run.error is None, error=run.error, items_seen=run.saved + run.unchanged))  # fmt: skip
+                          ok=run.error is None, error=run.error, items_seen=run.saved + run.unchanged,
+                          needs_login=run.needs_login))  # fmt: skip
         log.info("library %s: %d new or changed, %d unchanged, %d gone, %d skipped%s", name, run.saved,
                  run.unchanged, run.removed, len(run.skipped), f"; failed: {run.error}" if run.error else "")  # fmt: skip
 

@@ -20,7 +20,7 @@ from pydantic import BaseModel, model_validator
 
 from ..coursecode import parse_course_code
 from ..quarters import code_from_term
-from .base import CourseRef, FetchResult, ItemIn, Kind, Source, SourceContext, SourceError, Status, register
+from .base import CourseRef, FetchResult, ItemIn, Kind, LoginError, Source, SourceContext, SourceError, Status, register
 from .classify import kind_from_title
 
 _KINDS: dict[str, Kind] = {
@@ -82,6 +82,9 @@ class CanvasSource(Source[CanvasConfig]):
             items += [assignment_item(a, c["id"], group_names, base) for a in assignments]
         return FetchResult(items=items, courses=[course_ref(c, base) for c in courses], window=(start, end))
 
+    async def check_login(self, ctx: SourceContext) -> None:
+        await CanvasApi(self.config, ctx.http).get_one("/api/v1/users/self")
+
 
 class CanvasApi:
     """GETs against the Canvas API with a token or a browser session cookie. Read-only."""
@@ -106,8 +109,8 @@ class CanvasApi:
         if optional and resp.status_code in (401, 403, 404):
             return None
         if resp.status_code in (401, 403) or resp.is_redirect:
-            fix = "paste a fresh session cookie into .env" if self.config.cookie else "check the API token"
-            raise SourceError(f"Canvas rejected the login; {fix}")
+            fix = "paste a fresh session cookie" if self.config.cookie else "check the API token"
+            raise LoginError(f"Canvas rejected the login; {fix}")
         if not resp.is_success:
             raise SourceError(f"Canvas {path} returned HTTP {resp.status_code}")
         return resp
@@ -143,7 +146,7 @@ class CanvasApi:
             if resp.is_redirect:
                 url = urljoin(url, resp.headers["location"])
                 if urlsplit(url).netloc == self.host and urlsplit(url).path.startswith("/login"):
-                    raise SourceError("Canvas rejected the login; paste a fresh session cookie into .env")
+                    raise LoginError("Canvas rejected the login; paste a fresh session cookie")
                 continue
             if not resp.is_success:
                 raise SourceError(f"Canvas file download returned HTTP {resp.status_code}")
